@@ -1,0 +1,37 @@
+{
+  "name": "sonic-threejs-engine",
+  "version": "0.0.1",
+  "description": "A 2.5D classic Sonic game engine using Three.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "vite examples",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/celsowm/sonic-three-js.git"
+  },
+  "keywords": ["sonic", "three.js", "game", "engine", "2.5d"],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/celsowm/sonic-three-js/issues"
+  },
+  "homepage": "https://github.com/celsowm/sonic-three-js#readme",
+  "dependencies": {
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.184.1",
+    "@vitest/browser": "^4.1.6",
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.12",
+    "vitest": "^4.1.6"
+  }
+}
