@@ -26,6 +26,15 @@ export abstract class Entity {
   public abstract update(deltaTime: number, engine: Engine): void;
   public abstract onCollision(other: Entity): void;
 
+  public getBounds() {
+    return {
+      left: this.x - this.width / 2,
+      right: this.x + this.width / 2,
+      bottom: this.y - this.height / 2,
+      top: this.y + this.height / 2,
+    };
+  }
+
   public syncMesh() {
     if (this.mesh) {
       this.mesh.position.x = this.x;

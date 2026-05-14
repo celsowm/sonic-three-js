@@ -1,5 +1,11 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Stage, Player, Ring, Badnik, Monitor, FinishSign, HUD } from '../src';
+
+const SONIC_RUNNERS_MODEL_URL = new URL(
+  '../assets/models/sonic/classic-sonic-runners/classic-sonic-runners.glb',
+  import.meta.url,
+).href;
 
 const stage = new Stage('game-container');
 const hud = new HUD('game-container');
@@ -7,6 +13,21 @@ const hud = new HUD('game-container');
 // Create Player
 const player = new Player(0, 50);
 stage.addEntity(player);
+
+const loader = new GLTFLoader();
+loader.load(
+  SONIC_RUNNERS_MODEL_URL,
+  gltf => {
+    player.setAnimatedModel(gltf.scene, gltf.animations, {
+      scale: 8,
+      offset: { x: 0, y: -5, z: 0 },
+    });
+  },
+  undefined,
+  error => {
+    console.warn('Failed to load Sonic Runners model, using placeholder player.', error);
+  },
+);
 
 // Create some Rings
 for (let i = 0; i < 5; i++) {

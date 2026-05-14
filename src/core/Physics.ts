@@ -36,11 +36,18 @@ export class Physics {
   }
 
   public checkAABBCollision(a: any, b: any): boolean {
+    const boundsA = typeof a.getBounds === 'function'
+      ? a.getBounds()
+      : { left: a.x, right: a.x + a.width, bottom: a.y, top: a.y + a.height };
+    const boundsB = typeof b.getBounds === 'function'
+      ? b.getBounds()
+      : { left: b.x, right: b.x + b.width, bottom: b.y, top: b.y + b.height };
+
     return (
-      a.x < b.x + b.width &&
-      a.x + a.width > b.x &&
-      a.y < b.y + b.height &&
-      a.y + a.height > b.y
+      boundsA.left < boundsB.right &&
+      boundsA.right > boundsB.left &&
+      boundsA.bottom < boundsB.top &&
+      boundsA.top > boundsB.bottom
     );
   }
 }

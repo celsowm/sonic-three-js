@@ -56,4 +56,13 @@ describe('Physics', () => {
     expect(physics.checkAABBCollision(e1, e2)).toBe(true);
     expect(physics.checkAABBCollision(e1, e3)).toBe(false);
   });
+
+  it('should use centered bounds for entity collisions', () => {
+    const e1 = new TestEntity(0, 0, 10, 10);
+    const e2 = new TestEntity(8.5, 0, 8, 8);
+    const e3 = new TestEntity(9, 0, 8, 8);
+
+    expect(physics.checkAABBCollision(e1, e2)).toBe(true);
+    expect(physics.checkAABBCollision(e1, e3)).toBe(false);
+  });
 });

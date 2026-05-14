@@ -9,13 +9,24 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "vite examples",
+    "sketchfab:info": "node scripts/sketchfab-model-info.mjs",
+    "sketchfab:download": "node scripts/sketchfab-download-model.mjs",
+    "sketchfab:download:browser": "node scripts/sketchfab-browser-download.mjs",
+    "sketchfab:download:manual": "node scripts/sketchfab-manual-download-watch.mjs",
+    "assets:sonic:add-idle": "node scripts/create-sonic-runners-asset.mjs",
     "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/celsowm/sonic-three-js.git"
   },
-  "keywords": ["sonic", "three.js", "game", "engine", "2.5d"],
+  "keywords": [
+    "sonic",
+    "three.js",
+    "game",
+    "engine",
+    "2.5d"
+  ],
   "author": "",
   "license": "ISC",
   "type": "module",
@@ -24,12 +35,16 @@
   },
   "homepage": "https://github.com/celsowm/sonic-three-js#readme",
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "three": "^0.184.0"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.3.0",
+    "@types/node": "^25.7.0",
     "@types/three": "^0.184.1",
     "@vitest/browser": "^4.1.6",
     "jsdom": "^29.1.1",
+    "playwright": "^1.60.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.12",
     "vitest": "^4.1.6"

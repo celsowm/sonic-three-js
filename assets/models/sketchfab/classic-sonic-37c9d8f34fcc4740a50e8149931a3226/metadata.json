@@ -1,0 +1,16 @@
+{
+  "id": "37c9d8f34fcc4740a50e8149931a3226",
+  "name": "Classic Sonic",
+  "slug": "classic-sonic",
+  "animationCount": 15,
+  "isDownloadable": true,
+  "license": {
+    "label": "CC Attribution",
+    "requirements": "Author must be credited. Commercial use is allowed.",
+    "url": "http://creativecommons.org/licenses/by/4.0/"
+  },
+  "downloadStrategy": "manual-browser-download",
+  "downloadFormat": "glb",
+  "downloadPath": "classic-sonic-manual-download.glb",
+  "thumbnailUrl": "https://media.sketchfab.com/models/37c9d8f34fcc4740a50e8149931a3226/thumbnails/c069e3a6b412440480799d6307991349/9722b4d638ff49d1adfe68ea001cf54a.jpeg"
+}

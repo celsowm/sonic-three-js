@@ -1,0 +1,16 @@
+{
+  "id": "fa58f582a6f4425ba303c1b0cf3f34c8",
+  "name": "ANIMATIONS Classic Sonic - Sonic Runners",
+  "slug": "animations-classic-sonic-sonic-runners",
+  "animationCount": 15,
+  "isDownloadable": true,
+  "license": {
+    "label": "CC Attribution",
+    "requirements": "Author must be credited. Commercial use is allowed.",
+    "url": "http://creativecommons.org/licenses/by/4.0/"
+  },
+  "downloadStrategy": "manual-browser-download",
+  "downloadFormat": "glb",
+  "downloadPath": "animations-classic-sonic-sonic-runners-manual-download.glb",
+  "thumbnailUrl": "https://media.sketchfab.com/models/fa58f582a6f4425ba303c1b0cf3f34c8/thumbnails/2a6d7864eb5844908869860993c2ca0f/495086c0190948149d2172e9aebca8ed.jpeg"
+}

@@ -66,6 +66,22 @@ describe('Gameplay E2E Simulation', () => {
     expect(ring.destroyFlag).toBe(true);
   });
 
+  it('should collect rings placed at normal airborne height while grounded', () => {
+    const ring = new Ring(0, 10);
+    stage.addEntity(ring);
+
+    player.x = 0;
+    player.y = 0;
+    player.velocityX = 0;
+    player.velocityY = 0;
+
+    stage.engine['update'](1 / 60);
+
+    expect(player.rings).toBe(1);
+    expect(player.score).toBe(10);
+    expect(ring.destroyFlag).toBe(true);
+  });
+
   it('should allow player to break a monitor and get rings', () => {
     const monitor = new Monitor(20, 0, 'rings');
     stage.addEntity(monitor);
