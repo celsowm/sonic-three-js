@@ -1,13 +1,35 @@
 import { Engine } from '../core/Engine';
+import type { EngineOptions } from '../core/Engine';
 import { Entity } from './Entity';
 import { Player } from './Player';
+
+export interface StageOptions {
+  engine?: EngineOptions;
+  camera?: {
+    followOffsetX?: number;
+    followOffsetY?: number;
+  };
+}
 
 export class Stage {
   public engine: Engine;
   public player!: Player;
+  private cameraFollowOffsetX: number;
+  private cameraFollowOffsetY: number;
 
-  constructor(containerId: string) {
-    this.engine = new Engine(containerId);
+  constructor(containerId: string, options: StageOptions = {}) {
+    this.engine = new Engine(containerId, options.engine);
+    this.cameraFollowOffsetX = options.camera?.followOffsetX ?? 20;
+    this.cameraFollowOffsetY = options.camera?.followOffsetY ?? 22;
+  }
+
+  public configureCamera(camera: NonNullable<StageOptions['camera']>): void {
+    if (camera.followOffsetX !== undefined) {
+      this.cameraFollowOffsetX = camera.followOffsetX;
+    }
+    if (camera.followOffsetY !== undefined) {
+      this.cameraFollowOffsetY = camera.followOffsetY;
+    }
   }
 
   public load(levelData: { type: string, x: number, y: number }[]) {
@@ -30,10 +52,8 @@ export class Stage {
 
   public updateCamera() {
     if (this.player && this.engine.renderer.camera) {
-      // Follow player on X axis
-      this.engine.renderer.camera.position.x = this.player.x;
-      // Basic follow on Y, keeping player near bottom
-      this.engine.renderer.camera.position.y = this.player.y + 20;
+      this.engine.renderer.camera.position.x = this.player.x + this.cameraFollowOffsetX;
+      this.engine.renderer.camera.position.y = this.player.y + this.cameraFollowOffsetY;
     }
   }
 

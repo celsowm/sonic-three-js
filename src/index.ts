@@ -10,5 +10,10 @@ export * from './entities/Badnik';
 export * from './entities/Monitor';
 export * from './entities/FinishSign';
 export * from './entities/Stage';
+export * from './entities/SceneryElement';
+
+export * from './level/LevelDefinition';
+export * from './level/LevelLoader';
+export * from './levels/greenHillAct1';
 
 export * from './components/HUD';

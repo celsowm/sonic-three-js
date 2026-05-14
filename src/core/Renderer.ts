@@ -1,23 +1,45 @@
 import * as THREE from 'three';
 
+export interface RendererOptions {
+  cameraMode?: 'side-scroller' | 'perspective';
+  visibleHeight?: number;
+}
+
 export class Renderer {
   public scene: THREE.Scene;
   public camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
   public renderer: THREE.WebGLRenderer;
   private container: HTMLElement;
+  private cameraMode: 'side-scroller' | 'perspective';
+  private visibleHeight: number;
 
-  constructor(containerId: string, useOrtho: boolean = false) {
+  constructor(containerId: string, options: RendererOptions | boolean = {}) {
     const el = document.getElementById(containerId);
     if (!el) throw new Error(`Container ${containerId} not found`);
     this.container = el;
 
     this.scene = new THREE.Scene();
+    this.cameraMode = typeof options === 'boolean'
+      ? (options ? 'side-scroller' : 'perspective')
+      : options.cameraMode ?? 'side-scroller';
+    this.visibleHeight = typeof options === 'boolean'
+      ? 100
+      : options.visibleHeight ?? 100;
 
     const width = this.container.clientWidth || window.innerWidth;
     const height = this.container.clientHeight || window.innerHeight;
 
-    if (useOrtho) {
-      this.camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 0.1, 1000);
+    if (this.cameraMode === 'side-scroller') {
+      const aspect = width / height;
+      const visibleWidth = this.visibleHeight * aspect;
+      this.camera = new THREE.OrthographicCamera(
+        visibleWidth / -2,
+        visibleWidth / 2,
+        this.visibleHeight / 2,
+        this.visibleHeight / -2,
+        0.1,
+        1000,
+      );
     } else {
       this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     }
@@ -46,10 +68,12 @@ export class Renderer {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
     } else if (this.camera instanceof THREE.OrthographicCamera) {
-      this.camera.left = width / -2;
-      this.camera.right = width / 2;
-      this.camera.top = height / 2;
-      this.camera.bottom = height / -2;
+      const aspect = width / height;
+      const visibleWidth = this.visibleHeight * aspect;
+      this.camera.left = visibleWidth / -2;
+      this.camera.right = visibleWidth / 2;
+      this.camera.top = this.visibleHeight / 2;
+      this.camera.bottom = this.visibleHeight / -2;
       this.camera.updateProjectionMatrix();
     }
     this.renderer.setSize(width, height);
@@ -57,5 +81,14 @@ export class Renderer {
 
   public render() {
     this.renderer.render(this.scene, this.camera);
+  }
+
+  public setVisibleHeight(visibleHeight: number): void {
+    if (visibleHeight <= 0) {
+      throw new Error('Visible height must be greater than zero.');
+    }
+
+    this.visibleHeight = visibleHeight;
+    this.onWindowResize();
   }
 }

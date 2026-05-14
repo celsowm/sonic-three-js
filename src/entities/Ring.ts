@@ -7,7 +7,7 @@ export class Ring extends Entity {
   constructor(x: number, y: number) {
     super(x, y, 8, 8);
 
-    const geometry = new THREE.TorusGeometry(4, 1, 8, 24);
+    const geometry = new THREE.TorusGeometry(3.2, 0.65, 8, 24);
     const material = new THREE.MeshLambertMaterial({ color: 0xffff00 });
     this.mesh = new THREE.Mesh(geometry, material);
     this.syncMesh();

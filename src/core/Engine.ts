@@ -1,7 +1,12 @@
 import { Renderer } from './Renderer';
+import type { RendererOptions } from './Renderer';
 import { Physics } from './Physics';
 import { Input } from './Input';
 import { Entity } from '../entities/Entity';
+
+export interface EngineOptions {
+  renderer?: RendererOptions;
+}
 
 export class Engine {
   public renderer: Renderer;
@@ -13,8 +18,8 @@ export class Engine {
   private animationFrameId: number | null = null;
   private isRunning: boolean = false;
 
-  constructor(containerId: string) {
-    this.renderer = new Renderer(containerId);
+  constructor(containerId: string, options: EngineOptions = {}) {
+    this.renderer = new Renderer(containerId, options.renderer);
     this.physics = new Physics();
     this.input = new Input();
   }

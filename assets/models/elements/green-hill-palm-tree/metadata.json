@@ -1,0 +1,14 @@
+{
+  "name": "Green Hill Palm Tree",
+  "sourceArchive": "C:\\Users\\celso\\Downloads\\GameCube - Sonic Adventure 2_ Battle - Objects - Palm Tree (Green Hill).zip",
+  "sourceFiles": [
+    "assets/models/elements/green-hill-palm-tree/source/Green Hill Palm Tree/yasi.obj",
+    "assets/models/elements/green-hill-palm-tree/source/Green Hill Palm Tree/yasi.mtl",
+    "assets/models/elements/green-hill-palm-tree/source/Green Hill Palm Tree/hill_obj.png"
+  ],
+  "outputPath": "assets/models/elements/green-hill-palm-tree/green-hill-palm-tree.glb",
+  "runtimeFormat": "glb",
+  "orientation": "Original OBJ coordinates; Y is up.",
+  "recommendedExampleScale": 0.35,
+  "generatedAt": "2026-05-14T03:50:46.046Z"
+}
