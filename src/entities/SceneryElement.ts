@@ -8,6 +8,11 @@ export interface SceneryElementOptions {
   height?: number;
   scale?: number;
   offset?: THREE.Vector3Like;
+  rotation?: {
+    x?: number;
+    y?: number;
+    z?: number;
+  };
 }
 
 export class SceneryElement extends Entity {
@@ -36,6 +41,11 @@ export class SceneryElement extends Entity {
       options.offset?.x ?? 0,
       options.offset?.y ?? 0,
       options.offset?.z ?? 0,
+    );
+    model.rotation.set(
+      options.rotation?.x ?? 0,
+      options.rotation?.y ?? 0,
+      options.rotation?.z ?? 0,
     );
   }
 

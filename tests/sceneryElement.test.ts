@@ -16,7 +16,7 @@ class TestEntity extends Entity {
 describe('SceneryElement', () => {
   it('keeps decorative scenery synced to its world position', () => {
     const model = new THREE.Group();
-    const scenery = new SceneryElement(25, -5, { mesh: model, scale: 0.35 });
+    const scenery = new SceneryElement(25, -5, { mesh: model, scale: 0.35, rotation: { z: Math.PI / 4 } });
 
     expect(scenery.mesh).toBeInstanceOf(THREE.Group);
     expect(scenery.mesh?.position.x).toBe(25);
@@ -24,6 +24,7 @@ describe('SceneryElement', () => {
     expect(model.scale.x).toBe(0.35);
     expect(model.scale.y).toBe(0.35);
     expect(model.scale.z).toBe(0.35);
+    expect(model.rotation.z).toBe(Math.PI / 4);
   });
 
   it('does not mutate itself or other entities on collision', () => {

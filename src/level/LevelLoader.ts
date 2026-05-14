@@ -110,6 +110,7 @@ export class LevelLoader {
       mesh: model.clone(true),
       scale: definition.scale ?? 1,
       offset: { x: 0, y: 0, z: definition.z ?? -20 },
+      rotation: definition.rotation,
       width: 0,
       height: 0,
     }));

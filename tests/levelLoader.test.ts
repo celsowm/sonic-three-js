@@ -63,7 +63,7 @@ const testLevel: LevelDefinition = {
     { type: 'ring', x: 20, y: 10 },
   ],
   decorations: [
-    { type: 'model', asset: 'palm', x: 30, y: -5, z: -24, scale: 0.5 },
+    { type: 'model', asset: 'palm', x: 30, y: -5, z: -24, scale: 0.5, rotation: { y: Math.PI } },
   ],
 };
 
@@ -93,6 +93,10 @@ describe('LevelLoader', () => {
     expect(stage.engine.entities.some(entity => entity instanceof Ring)).toBe(true);
     expect(stage.engine.entities.some(entity => entity instanceof SceneryElement)).toBe(true);
     expect(stage.engine.renderer.scene.children.length).toBeGreaterThan(2);
+
+    const decoration = stage.engine.entities.find(entity => entity instanceof SceneryElement) as SceneryElement;
+    const model = (decoration.mesh as THREE.Group).children[0];
+    expect(model.rotation.y).toBe(Math.PI);
 
     stage.updateCamera();
     expect(stage.engine.renderer.camera.position.x).toBe(13);

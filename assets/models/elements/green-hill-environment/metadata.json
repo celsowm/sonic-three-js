@@ -1,0 +1,26 @@
+{
+  "name": "Green Hill Environment",
+  "runtimeFormat": "glb",
+  "source": "Generated procedurally with Blender Python; no downloaded third-party models.",
+  "orientation": "Y up, X side-scroller axis, Z depth.",
+  "recommendedExampleScale": 1,
+  "assets": [
+    {
+      "id": "green-hill-terrain-set",
+      "file": "green-hill-terrain-set.glb"
+    },
+    {
+      "id": "green-hill-loop",
+      "file": "green-hill-loop.glb"
+    },
+    {
+      "id": "green-hill-props",
+      "file": "green-hill-props.glb"
+    },
+    {
+      "id": "green-hill-background",
+      "file": "green-hill-background.glb"
+    }
+  ],
+  "generatedAt": "2026-05-14T04:20:32.915Z"
+}

@@ -7,6 +7,12 @@ export interface Vector3Definition extends Vector2Definition {
   z: number;
 }
 
+export interface RotationDefinition {
+  x?: number;
+  y?: number;
+  z?: number;
+}
+
 export interface CameraDefinition {
   visibleHeight: number;
   followOffsetX: number;
@@ -54,6 +60,7 @@ export interface DecorationDefinition extends Vector2Definition {
   asset: string;
   scale?: number;
   z?: number;
+  rotation?: RotationDefinition;
 }
 
 export interface BackgroundLayerDefinition extends Vector2Definition {

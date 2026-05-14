@@ -15,6 +15,7 @@
     "sketchfab:download:manual": "node scripts/sketchfab-manual-download-watch.mjs",
     "assets:sonic:add-idle": "node scripts/create-sonic-runners-asset.mjs",
     "assets:elements:palm-tree": "node scripts/create-green-hill-palm-tree-asset.mjs",
+    "assets:elements:green-hill": "node scripts/create-green-hill-environment-assets.mjs",
     "assets:measure": "node scripts/measure-model-units.mjs",
     "prepublishOnly": "npm run build"
   },
