@@ -55,13 +55,29 @@ export interface TerrainDefinition extends Vector2Definition {
   z?: number;
 }
 
-export interface DecorationDefinition extends Vector2Definition {
+export interface ModelDecorationDefinition extends Vector2Definition {
   type: 'model';
   asset: string;
   scale?: number;
   z?: number;
   rotation?: RotationDefinition;
 }
+
+export interface RuntimeDecorationDefinition extends Vector2Definition {
+  type: 'runtime-art';
+  art:
+    | 'green-hill-backdrop'
+    | 'green-hill-palm'
+    | 'green-hill-sunflower'
+    | 'green-hill-rock'
+    | 'green-hill-totem'
+    | 'green-hill-sign';
+  scale?: number;
+  z?: number;
+  rotation?: RotationDefinition;
+}
+
+export type DecorationDefinition = ModelDecorationDefinition | RuntimeDecorationDefinition;
 
 export interface BackgroundLayerDefinition extends Vector2Definition {
   type: 'color-band';

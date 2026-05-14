@@ -1,9 +1,5 @@
 import type { LevelDefinition, StageThemeDefinition } from '../level/LevelDefinition';
 
-const PALM_TREE_URL = new URL(
-  '../../assets/models/elements/green-hill-palm-tree/green-hill-palm-tree.glb',
-  import.meta.url,
-).href;
 const GREEN_HILL_ENVIRONMENT_URL = '../../assets/models/elements/green-hill-environment/';
 
 const environmentAssetUrl = (fileName: string) => new URL(
@@ -13,27 +9,15 @@ const environmentAssetUrl = (fileName: string) => new URL(
 
 export const greenHillTheme: StageThemeDefinition = {
   id: 'green-hill',
-  skyColor: 0x7ec8df,
+  skyColor: 0x8ed8f7,
   terrainMaterials: {
     'green-hill-grass': {
-      color: 0x166b1b,
+      color: 0x2ea334,
     },
   },
   decorations: {
-    'green-hill-palm-tree': {
-      url: PALM_TREE_URL,
-    },
-    'green-hill-terrain-set': {
-      url: environmentAssetUrl('green-hill-terrain-set.glb'),
-    },
     'green-hill-loop': {
       url: environmentAssetUrl('green-hill-loop.glb'),
-    },
-    'green-hill-props': {
-      url: environmentAssetUrl('green-hill-props.glb'),
-    },
-    'green-hill-background': {
-      url: environmentAssetUrl('green-hill-background.glb'),
     },
   },
 };
@@ -55,30 +39,30 @@ export const greenHillAct1: LevelDefinition = {
     {
       type: 'color-band',
       x: 500,
-      y: -52,
+      y: -72,
       z: -90,
-      width: 1800,
-      height: 36,
-      color: 0x0e74b8,
+      width: 1850,
+      height: 74,
+      color: 0x0d7ac0,
     },
     {
       type: 'color-band',
       x: 500,
-      y: -68,
+      y: -57,
       z: -88,
-      width: 1800,
-      height: 34,
-      color: 0x0a5f38,
+      width: 1850,
+      height: 16,
+      color: 0x67c1e0,
     },
   ],
   terrain: [
     {
       type: 'solid-platform',
       x: 500,
-      y: -45,
-      z: -46,
+      y: 0,
+      z: -14,
       width: 1800,
-      height: 80,
+      height: 74,
       material: 'green-hill-grass',
     },
   ],
@@ -93,25 +77,27 @@ export const greenHillAct1: LevelDefinition = {
     { type: 'finish-sign', x: 520, y: 10 },
   ],
   decorations: [
-    { type: 'model', asset: 'green-hill-background', x: 70, y: 20, z: -84, scale: 1.25 },
-    { type: 'model', asset: 'green-hill-background', x: 380, y: 10, z: -86, scale: 1.35 },
-    { type: 'model', asset: 'green-hill-background', x: 675, y: 13, z: -84, scale: 1.22 },
-    { type: 'model', asset: 'green-hill-loop', x: 118, y: -2, z: -38, scale: 1.08 },
-    { type: 'model', asset: 'green-hill-loop', x: 500, y: -4, z: -40, scale: 0.92 },
-    { type: 'model', asset: 'green-hill-terrain-set', x: -20, y: 0, z: -16, scale: 1.1 },
-    { type: 'model', asset: 'green-hill-terrain-set', x: 70, y: 0, z: -16, scale: 1.1 },
-    { type: 'model', asset: 'green-hill-terrain-set', x: 160, y: 0, z: -16, scale: 1.1 },
-    { type: 'model', asset: 'green-hill-terrain-set', x: 250, y: 0, z: -16, scale: 1.1 },
-    { type: 'model', asset: 'green-hill-terrain-set', x: 340, y: 0, z: -16, scale: 1.1 },
-    { type: 'model', asset: 'green-hill-terrain-set', x: 430, y: 0, z: -16, scale: 1.1 },
-    { type: 'model', asset: 'green-hill-terrain-set', x: 520, y: 0, z: -16, scale: 1.1 },
-    { type: 'model', asset: 'green-hill-terrain-set', x: 610, y: 0, z: -16, scale: 1.1 },
-    { type: 'model', asset: 'green-hill-palm-tree', x: 84, y: -5, z: -30, scale: 0.72 },
-    { type: 'model', asset: 'green-hill-palm-tree', x: 302, y: -5, z: -34, scale: 0.68 },
-    { type: 'model', asset: 'green-hill-palm-tree', x: 584, y: -5, z: -36, scale: 0.64 },
-    { type: 'model', asset: 'green-hill-props', x: 42, y: 0, z: -12, scale: 0.72 },
-    { type: 'model', asset: 'green-hill-props', x: 150, y: 0, z: -13, scale: 0.95 },
-    { type: 'model', asset: 'green-hill-props', x: 515, y: 0, z: -13, scale: 0.86, rotation: { y: 3.1416 } },
-    { type: 'model', asset: 'green-hill-props', x: 710, y: 0, z: -15, scale: 0.72 },
+    { type: 'runtime-art', art: 'green-hill-backdrop', x: 70, y: 8, z: -84, scale: 1.26 },
+    { type: 'runtime-art', art: 'green-hill-backdrop', x: 360, y: 10, z: -86, scale: 1.34 },
+    { type: 'runtime-art', art: 'green-hill-backdrop', x: 670, y: 9, z: -85, scale: 1.22 },
+    { type: 'model', asset: 'green-hill-loop', x: 132, y: 1, z: -37, scale: 1.02 },
+    { type: 'model', asset: 'green-hill-loop', x: 502, y: 0, z: -39, scale: 0.94 },
+    { type: 'runtime-art', art: 'green-hill-palm', x: 94, y: 0, z: -28, scale: 0.9 },
+    { type: 'runtime-art', art: 'green-hill-palm', x: 342, y: 0, z: -30, scale: 0.84 },
+    { type: 'runtime-art', art: 'green-hill-palm', x: 630, y: 0, z: -30, scale: 0.82 },
+    { type: 'runtime-art', art: 'green-hill-sunflower', x: 30, y: 0, z: -12, scale: 0.84 },
+    { type: 'runtime-art', art: 'green-hill-sunflower', x: 58, y: 0, z: -12, scale: 0.72 },
+    { type: 'runtime-art', art: 'green-hill-sunflower', x: 156, y: 0, z: -12, scale: 0.8 },
+    { type: 'runtime-art', art: 'green-hill-sunflower', x: 286, y: 0, z: -12, scale: 0.75 },
+    { type: 'runtime-art', art: 'green-hill-sunflower', x: 474, y: 0, z: -12, scale: 0.82 },
+    { type: 'runtime-art', art: 'green-hill-sunflower', x: 660, y: 0, z: -12, scale: 0.74 },
+    { type: 'runtime-art', art: 'green-hill-rock', x: 82, y: 0, z: -11, scale: 0.92 },
+    { type: 'runtime-art', art: 'green-hill-rock', x: 190, y: 0, z: -11, scale: 0.96 },
+    { type: 'runtime-art', art: 'green-hill-rock', x: 408, y: 0, z: -11, scale: 1.06 },
+    { type: 'runtime-art', art: 'green-hill-rock', x: 554, y: 0, z: -11, scale: 0.9 },
+    { type: 'runtime-art', art: 'green-hill-sign', x: 244, y: 0, z: -13, scale: 0.86 },
+    { type: 'runtime-art', art: 'green-hill-sign', x: 714, y: 0, z: -13, scale: 0.78, rotation: { y: 3.1416 } },
+    { type: 'runtime-art', art: 'green-hill-totem', x: 330, y: 0, z: -13, scale: 0.82 },
+    { type: 'runtime-art', art: 'green-hill-totem', x: 598, y: 0, z: -13, scale: 0.84, rotation: { y: 3.1416 } },
   ],
 };

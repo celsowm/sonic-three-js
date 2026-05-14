@@ -7,11 +7,14 @@ import { Badnik } from '../entities/Badnik';
 import { Monitor } from '../entities/Monitor';
 import { FinishSign } from '../entities/FinishSign';
 import { SceneryElement } from '../entities/SceneryElement';
+import { createGreenHillRuntimeArt, createGreenHillTerrainVisual } from './greenHillRuntimeArt';
 import type {
   BackgroundLayerDefinition,
   DecorationDefinition,
   GameplayEntityDefinition,
   LevelDefinition,
+  ModelDecorationDefinition,
+  RuntimeDecorationDefinition,
   TerrainDefinition,
 } from './LevelDefinition';
 
@@ -81,10 +84,16 @@ export class LevelLoader {
     return mesh;
   }
 
-  private createTerrain(definition: TerrainDefinition, level: LevelDefinition): THREE.Mesh {
+  private createTerrain(definition: TerrainDefinition, level: LevelDefinition): THREE.Object3D {
     const materialDefinition = level.theme.terrainMaterials[definition.material];
     if (!materialDefinition) {
       throw new Error(`Terrain material "${definition.material}" is not defined by theme "${level.theme.id}".`);
+    }
+
+    if (level.theme.id === 'green-hill' && definition.material === 'green-hill-grass') {
+      const terrain = createGreenHillTerrainVisual(definition);
+      terrain.position.set(definition.x, definition.y, definition.z ?? -20);
+      return terrain;
     }
 
     const geometry = new THREE.PlaneGeometry(definition.width, definition.height);
@@ -100,6 +109,19 @@ export class LevelLoader {
     level: LevelDefinition,
     definition: DecorationDefinition,
   ): Promise<void> {
+    if (definition.type === 'runtime-art') {
+      this.addRuntimeDecoration(stage, definition);
+      return;
+    }
+
+    await this.addModelDecoration(stage, level, definition);
+  }
+
+  private async addModelDecoration(
+    stage: Stage,
+    level: LevelDefinition,
+    definition: ModelDecorationDefinition,
+  ): Promise<void> {
     const asset = level.theme.decorations[definition.asset];
     if (!asset) {
       throw new Error(`Decoration asset "${definition.asset}" is not defined by theme "${level.theme.id}".`);
@@ -108,6 +130,18 @@ export class LevelLoader {
     const model = await this.loadModel(asset.url);
     stage.addEntity(new SceneryElement(definition.x, definition.y, {
       mesh: model.clone(true),
+      scale: definition.scale ?? 1,
+      offset: { x: 0, y: 0, z: definition.z ?? -20 },
+      rotation: definition.rotation,
+      width: 0,
+      height: 0,
+    }));
+  }
+
+  private addRuntimeDecoration(stage: Stage, definition: RuntimeDecorationDefinition): void {
+    const art = createGreenHillRuntimeArt(definition.art);
+    stage.addEntity(new SceneryElement(definition.x, definition.y, {
+      mesh: art,
       scale: definition.scale ?? 1,
       offset: { x: 0, y: 0, z: definition.z ?? -20 },
       rotation: definition.rotation,

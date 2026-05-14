@@ -64,6 +64,7 @@ const testLevel: LevelDefinition = {
   ],
   decorations: [
     { type: 'model', asset: 'palm', x: 30, y: -5, z: -24, scale: 0.5, rotation: { y: Math.PI } },
+    { type: 'runtime-art', art: 'green-hill-rock', x: 44, y: 0, z: -12, scale: 0.8 },
   ],
 };
 
@@ -91,11 +92,14 @@ describe('LevelLoader', () => {
     expect(result.player).toBeInstanceOf(Player);
     expect(stage.player).toBe(result.player);
     expect(stage.engine.entities.some(entity => entity instanceof Ring)).toBe(true);
-    expect(stage.engine.entities.some(entity => entity instanceof SceneryElement)).toBe(true);
+    expect(stage.engine.entities.filter(entity => entity instanceof SceneryElement)).toHaveLength(2);
     expect(stage.engine.renderer.scene.children.length).toBeGreaterThan(2);
 
-    const decoration = stage.engine.entities.find(entity => entity instanceof SceneryElement) as SceneryElement;
-    const model = (decoration.mesh as THREE.Group).children[0];
+    const decoration = stage.engine.entities
+      .filter(entity => entity instanceof SceneryElement)
+      .map(entity => entity.mesh as THREE.Group)
+      .find(mesh => mesh.children[0]?.name === 'palm.glb') as THREE.Group;
+    const model = decoration.children[0];
     expect(model.rotation.y).toBe(Math.PI);
 
     stage.updateCamera();
