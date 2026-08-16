@@ -5,8 +5,10 @@ export class HUD {
   private scoreEl: HTMLDivElement;
   private timeEl: HTMLDivElement;
   private ringsEl: HTMLDivElement;
+  private livesEl: HTMLDivElement;
 
   private startTime: number = Date.now();
+  private pausedAt: number | null = null;
   private elapsedSeconds: number = 0;
 
   constructor(parentId: string) {
@@ -26,23 +28,45 @@ export class HUD {
     this.scoreEl = document.createElement('div');
     this.timeEl = document.createElement('div');
     this.ringsEl = document.createElement('div');
+    this.livesEl = document.createElement('div');
 
     this.container.appendChild(this.scoreEl);
     this.container.appendChild(this.timeEl);
     this.container.appendChild(this.ringsEl);
+    this.container.appendChild(this.livesEl);
 
     parent.style.position = 'relative'; // ensure parent can contain absolute element
     parent.appendChild(this.container);
 
-    this.updateDisplay(0, 0, 0);
+    this.updateDisplay(0, 0, 0, 3);
   }
 
   public update(player: Player) {
-    this.elapsedSeconds = Math.floor((Date.now() - this.startTime) / 1000);
-    this.updateDisplay(player.score, this.elapsedSeconds, player.rings);
+    if (this.pausedAt === null) {
+      this.elapsedSeconds = Math.floor((Date.now() - this.startTime) / 1000);
+    }
+    this.updateDisplay(player.score, this.elapsedSeconds, player.rings, player.lives);
   }
 
-  private updateDisplay(score: number, time: number, rings: number) {
+  /** Freezes the timer while the game is paused. */
+  public pause(): void {
+    if (this.pausedAt === null) {
+      this.pausedAt = Date.now();
+    }
+  }
+
+  public resume(): void {
+    if (this.pausedAt !== null) {
+      this.startTime += Date.now() - this.pausedAt;
+      this.pausedAt = null;
+    }
+  }
+
+  public get elapsed(): number {
+    return this.elapsedSeconds;
+  }
+
+  private updateDisplay(score: number, time: number, rings: number, lives: number) {
     const mins = Math.floor(time / 60);
     const secs = time % 60;
     const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -50,6 +74,7 @@ export class HUD {
     this.scoreEl.innerText = `SCORE: ${score}`;
     this.timeEl.innerText = `TIME: ${timeStr}`;
     this.ringsEl.innerText = `RINGS: ${rings}`;
+    this.livesEl.innerText = `LIVES: ${Math.max(0, lives)}`;
   }
 
   public destroy() {

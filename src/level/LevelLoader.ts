@@ -7,6 +7,8 @@ import { Ring } from '../entities/Ring';
 import { Badnik } from '../entities/Badnik';
 import { Monitor } from '../entities/Monitor';
 import { FinishSign } from '../entities/FinishSign';
+import { Spring } from '../entities/Spring';
+import { Checkpoint } from '../entities/Checkpoint';
 import { SceneryElement } from '../entities/SceneryElement';
 import type { Terrain } from '../core/Terrain';
 import { createGreenHillRuntimeArt, createGreenHillTerrainVisual } from './greenHillRuntimeArt';
@@ -82,6 +84,11 @@ export class LevelLoader {
     }
 
     const player = new Player(level.player.x, level.player.y);
+    if (level.spawn) {
+      player.spawnX = level.spawn.x;
+      player.spawnY = level.spawn.y;
+    }
+    player.deathY = level.deathY ?? this.defaultDeathY(level);
     stage.addEntity(player);
 
     if (level.player.model === 'classic-sonic-runners') {
@@ -110,6 +117,13 @@ export class LevelLoader {
         return new Monitor(definition.x, definition.y, definition.monitorType ?? 'rings');
       case 'finish-sign':
         return new FinishSign(definition.x, definition.y);
+      case 'spring':
+        return new Spring(definition.x, definition.y, {
+          direction: definition.direction,
+          force: definition.force,
+        });
+      case 'checkpoint':
+        return new Checkpoint(definition.x, definition.y);
       default: {
         const unknown = definition as { type: string };
         throw new Error(`Unknown gameplay entity type "${unknown.type}" in level data.`);
@@ -124,6 +138,20 @@ export class LevelLoader {
 
     mesh.position.set(definition.x, definition.y, definition.z);
     return mesh;
+  }
+
+  private defaultDeathY(level: LevelDefinition): number {
+    let lowest = 0;
+    for (const terrain of level.terrain) {
+      if (terrain.type === 'solid-platform') {
+        lowest = Math.min(lowest, terrain.y - terrain.height);
+      } else {
+        for (const point of terrain.points) {
+          lowest = Math.min(lowest, point.y);
+        }
+      }
+    }
+    return lowest - 250;
   }
 
   private addTerrainCollision(terrain: Terrain, definition: TerrainDefinition): void {

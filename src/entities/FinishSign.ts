@@ -3,8 +3,11 @@ import { Entity } from './Entity';
 import { Engine } from '../core/Engine';
 import { Player } from './Player';
 
+/** The goal sign; passing it emits the stageCleared event. */
 export class FinishSign extends Entity {
   public passed: boolean = false;
+
+  private engine: Engine | null = null;
 
   constructor(x: number, y: number) {
     super(x, y, 20, 40);
@@ -29,6 +32,8 @@ export class FinishSign extends Entity {
   }
 
   public update(deltaTime: number, engine: Engine): void {
+    this.engine = engine;
+
     if (this.passed && this.mesh) {
       // Spin the sign
       const sign = this.mesh.children[1];
@@ -41,16 +46,13 @@ export class FinishSign extends Entity {
   public onCollision(other: Entity): void {
     if (other instanceof Player && !this.passed) {
       this.passed = true;
-      // Change color/texture to indicate passed
-      if (this.mesh) {
-        const sign = this.mesh.children[1] as THREE.Mesh;
-        if (sign) {
-          (sign.material as THREE.MeshBasicMaterial).color.setHex(0xff0000);
-        }
+
+      const sign = this.mesh?.children[1] as THREE.Mesh | undefined;
+      if (sign) {
+        (sign.material as THREE.MeshBasicMaterial).color.setHex(0xff0000);
       }
 
-      // Trigger level end logic via engine event or flag (simplified)
-      console.log('Stage Cleared!');
+      this.engine?.events.emit('stageCleared', { score: other.score, rings: other.rings });
     }
   }
 }

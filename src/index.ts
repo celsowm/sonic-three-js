@@ -11,6 +11,8 @@ export * from './entities/Ring';
 export * from './entities/Badnik';
 export * from './entities/Monitor';
 export * from './entities/FinishSign';
+export * from './entities/Spring';
+export * from './entities/Checkpoint';
 export * from './entities/Stage';
 export * from './entities/SceneryElement';
 

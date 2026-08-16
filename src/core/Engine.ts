@@ -4,6 +4,8 @@ import { Physics } from './Physics';
 import { Input } from './Input';
 import { Terrain } from './Terrain';
 import { Entity } from '../entities/Entity';
+import type { Player } from '../entities/Player';
+import type { Checkpoint } from '../entities/Checkpoint';
 import { Emitter } from './events';
 
 export interface EngineOptions {
@@ -14,6 +16,13 @@ export type EngineEvents = {
   entityAdded: Entity;
   entityDestroyed: Entity;
   entitiesCollided: { a: Entity; b: Entity };
+  ringCollected: { total: number; score: number };
+  playerHurt: { player: Player };
+  playerDied: { player: Player };
+  playerRespawned: { player: Player };
+  gameOver: { lives: number };
+  checkpointReached: { checkpoint: Checkpoint };
+  stageCleared: { score: number; rings: number };
 };
 
 export type FrameCallback = (deltaTime: number) => void;

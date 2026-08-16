@@ -41,11 +41,23 @@ export interface FinishSignDefinition extends Vector2Definition {
   type: 'finish-sign';
 }
 
+export interface SpringDefinition extends Vector2Definition {
+  type: 'spring';
+  direction?: 'up' | 'up-right' | 'up-left';
+  force?: number;
+}
+
+export interface CheckpointDefinition extends Vector2Definition {
+  type: 'checkpoint';
+}
+
 export type GameplayEntityDefinition =
   | RingDefinition
   | BadnikDefinition
   | MonitorDefinition
-  | FinishSignDefinition;
+  | FinishSignDefinition
+  | SpringDefinition
+  | CheckpointDefinition;
 
 export interface SolidPlatformDefinition extends Vector2Definition {
   type: 'solid-platform';

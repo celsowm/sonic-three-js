@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Entity } from './Entity';
 import { Engine } from '../core/Engine';
+import { Ring } from './Ring';
 import type { RaycastHit, Terrain, TerrainPath } from '../core/Terrain';
 
 export type PlayerAnimationState = 'idle' | 'run' | 'boost' | 'jump' | 'fall' | 'roll';
@@ -59,6 +60,23 @@ export class Player extends Entity {
   public score: number = 0;
   public currentAnimationName: string | null = null;
 
+  public lives: number = 3;
+  /** Respawn point, updated by checkpoints. */
+  public spawnX: number;
+  public spawnY: number;
+  /** Falling below this Y kills the player. */
+  public deathY: number = -1000;
+
+  public isDead: boolean = false;
+  public deathTimer: number = 0;
+  /** Invulnerability after a hit or shield loss, in frames. */
+  public invulnerableTimer: number = 0;
+  /** Monitor-granted invincibility, in frames. */
+  public invincibilityTimer: number = 0;
+  public hasShield: boolean = false;
+  /** Input is ignored while this counts down (hurt knockback). */
+  public controlLockTimer: number = 0;
+
   /** Speed along the ground surface while grounded (classic "gsp"). */
   public groundSpeed: number = 0;
   /** Current surface angle in radians; recovers toward 0 while airborne. */
@@ -68,10 +86,13 @@ export class Player extends Entity {
   public groundDistance: number = 0;
 
   private isJumping: boolean = false;
+  private currentEngine: Engine | null = null;
 
   private readonly visualRoot: THREE.Group;
   private readonly orientationGroup: THREE.Group;
   private readonly modelRoot: THREE.Group;
+  private readonly shieldMesh: THREE.Mesh;
+  private readonly sparkleGroup: THREE.Group;
   private placeholder: THREE.Object3D;
   private animationMixer: THREE.AnimationMixer | null = null;
   private animationActions = new Map<string, THREE.AnimationAction>();
@@ -81,6 +102,9 @@ export class Player extends Entity {
   constructor(x: number, y: number) {
     super(x, y, 12, 22);
 
+    this.spawnX = x;
+    this.spawnY = y;
+
     this.visualRoot = new THREE.Group();
     this.orientationGroup = new THREE.Group();
     this.modelRoot = new THREE.Group();
@@ -89,9 +113,29 @@ export class Player extends Entity {
     const material = new THREE.MeshLambertMaterial({ color: 0x0000ff });
     this.placeholder = new THREE.Mesh(geometry, material);
 
+    this.shieldMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(15, 20, 16),
+      new THREE.MeshBasicMaterial({ color: 0x4db8ff, transparent: true, opacity: 0.22 }),
+    );
+    this.shieldMesh.visible = false;
+
+    this.sparkleGroup = new THREE.Group();
+    for (let index = 0; index < 4; index++) {
+      const star = new THREE.Mesh(
+        new THREE.TetrahedronGeometry(1.6),
+        new THREE.MeshBasicMaterial({ color: 0xffe24d }),
+      );
+      const angle = (Math.PI * 2 * index) / 4;
+      star.position.set(Math.cos(angle) * 16, Math.sin(angle) * 16, 4);
+      this.sparkleGroup.add(star);
+    }
+    this.sparkleGroup.visible = false;
+
     this.visualRoot.add(this.orientationGroup);
     this.orientationGroup.add(this.placeholder);
     this.orientationGroup.add(this.modelRoot);
+    this.orientationGroup.add(this.shieldMesh);
+    this.orientationGroup.add(this.sparkleGroup);
     this.mesh = this.visualRoot;
     this.syncMesh();
   }
@@ -136,8 +180,38 @@ export class Player extends Entity {
   }
 
   public update(deltaTime: number, engine: Engine): void {
+    this.currentEngine = engine;
+
+    if (this.invulnerableTimer > 0) this.invulnerableTimer -= deltaTime;
+    if (this.invincibilityTimer > 0) this.invincibilityTimer -= deltaTime;
+    if (this.controlLockTimer > 0) this.controlLockTimer -= deltaTime;
+
+    this.shieldMesh.visible = this.hasShield;
+    this.sparkleGroup.visible = this.invincibilityTimer > 0;
+    if (this.sparkleGroup.visible) {
+      this.sparkleGroup.rotation.z += 0.25 * deltaTime;
+    }
+
+    if (this.isDead) {
+      this.updateDeath(deltaTime);
+      this.syncMesh();
+      this.updateVisualState(deltaTime);
+      return;
+    }
+
+    // kill plane (pits), checked before physics so deep falls resolve even
+    // against the legacy floor
+    if (this.y < this.deathY) {
+      this.die();
+      this.syncMesh();
+      this.updateVisualState(deltaTime);
+      return;
+    }
+
     const input = engine.input;
-    const inputDirection = Number(input.isDown('ArrowRight')) - Number(input.isDown('ArrowLeft'));
+    const inputDirection = this.controlLockTimer > 0
+      ? 0
+      : Number(input.isDown('ArrowRight')) - Number(input.isDown('ArrowLeft'));
 
     if (this.isGrounded) {
       this.updateGrounded(inputDirection, input.isDown('ArrowDown'), input.justPressed('Space'), deltaTime, engine);
@@ -147,6 +221,120 @@ export class Player extends Entity {
 
     this.syncMesh();
     this.updateVisualState(deltaTime);
+  }
+
+  /** Applies spring-style launch velocities and detaches from the ground. */
+  public launch(velocityX: number, velocityY: number): void {
+    this.isGrounded = false;
+    this.isJumping = false;
+    this.groundPath = null;
+    this.groundAngle = 0;
+    this.velocityX = velocityX;
+    this.velocityY = velocityY;
+  }
+
+  /**
+   * Classic hit reaction: shield absorbs, rings scatter, otherwise death.
+   * Returns true when the hit actually landed.
+   */
+  public hurt(sourceX: number): boolean {
+    if (this.isDead || this.invulnerableTimer > 0 || this.invincibilityTimer > 0) {
+      return false;
+    }
+
+    if (this.hasShield) {
+      this.hasShield = false;
+      this.invulnerableTimer = 90;
+      this.applyHurtKnockback(sourceX);
+      this.currentEngine?.events.emit('playerHurt', { player: this });
+      return true;
+    }
+
+    if (this.rings > 0) {
+      this.scatterRings();
+      this.rings = 0;
+      this.invulnerableTimer = 120;
+      this.applyHurtKnockback(sourceX);
+      this.currentEngine?.events.emit('playerHurt', { player: this });
+      return true;
+    }
+
+    this.die();
+    return true;
+  }
+
+  public die(): void {
+    if (this.isDead) return;
+    this.isDead = true;
+    this.deathTimer = 0;
+    this.isGrounded = false;
+    this.groundPath = null;
+    this.isRolling = false;
+    this.velocityX = 0;
+    this.velocityY = 0;
+    this.currentEngine?.events.emit('playerDied', { player: this });
+  }
+
+  private applyHurtKnockback(sourceX: number): void {
+    const awayFromSource = this.x >= sourceX ? 1 : -1;
+    this.isGrounded = false;
+    this.groundPath = null;
+    this.controlLockTimer = 30;
+    this.velocityX = 2 * awayFromSource;
+    this.velocityY = 4;
+  }
+
+  private scatterRings(): void {
+    const engine = this.currentEngine;
+    if (!engine) return;
+
+    const count = Math.min(this.rings, 16);
+    for (let index = 0; index < count; index++) {
+      const spread = 0.35 + (index % 8) * 0.2;
+      const direction = index % 2 === 0 ? 1 : -1;
+      const speed = 4 + (index % 3);
+      engine.addEntity(new Ring(this.x, this.y + this.height / 2, {
+        scattered: true,
+        velocityX: Math.sin(spread) * speed * direction,
+        velocityY: Math.cos(spread) * speed,
+      }));
+    }
+  }
+
+  private updateDeath(deltaTime: number): void {
+    this.deathTimer += deltaTime;
+    // brief freeze, then fall off-screen
+    if (this.deathTimer > 30) {
+      this.velocityY -= 0.3 * deltaTime;
+      this.velocityY = Math.max(this.velocityY, -14);
+      this.y += this.velocityY * deltaTime;
+    }
+
+    if (this.deathTimer > 150 || this.y < this.deathY - 600) {
+      this.resolveDeath();
+    }
+  }
+
+  private resolveDeath(): void {
+    this.lives -= 1;
+    if (this.lives <= 0) {
+      this.currentEngine?.events.emit('gameOver', { lives: this.lives });
+      return;
+    }
+
+    this.isDead = false;
+    this.deathTimer = 0;
+    this.x = this.spawnX;
+    this.y = this.spawnY;
+    this.velocityX = 0;
+    this.velocityY = 0;
+    this.groundSpeed = 0;
+    this.groundAngle = 0;
+    this.groundPath = null;
+    this.isGrounded = false;
+    this.isJumping = false;
+    this.invulnerableTimer = 90;
+    this.currentEngine?.events.emit('playerRespawned', { player: this });
   }
 
   public onCollision(other: Entity): void {
@@ -454,6 +642,9 @@ export class Player extends Entity {
 
   private updateVisualState(deltaTime: number): void {
     this.visualRoot.scale.x = this.facingDirection;
+    // blink while invulnerable after a hit (not during monitor invincibility)
+    this.visualRoot.visible = !(this.invulnerableTimer > 0
+      && Math.floor(this.invulnerableTimer / 3) % 2 === 0);
     // the flip inverts child rotation, so pre-multiply by the facing to keep
     // the world tilt consistent on slopes and loops
     this.orientationGroup.rotation.z = this.facingDirection * this.groundAngle;
@@ -462,6 +653,7 @@ export class Player extends Entity {
   }
 
   private getAnimationState(): PlayerAnimationState {
+    if (this.isDead) return 'jump';
     if (this.isRolling) return 'roll';
     if (!this.isGrounded && this.velocityY > 0) return 'jump';
     if (!this.isGrounded && this.velocityY < 0) return 'fall';
