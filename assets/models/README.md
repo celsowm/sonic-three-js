@@ -45,3 +45,25 @@ If you cannot get Sketchfab OAuth access, use the browser downloader:
 - `npm run sketchfab:download:browser -- <url-or-model-id> [more-models...]`
 
 It opens a persistent Playwright browser profile. Log in to Sketchfab in the opened browser, click the official download option on the model page, and the script saves the downloaded archive next to the model metadata.
+
+If you already downloaded the archive manually, a watcher can file it into place:
+
+- `npm run sketchfab:download:manual`
+
+It watches your `~/Downloads` folder for model archives (`.zip`, `.glb`, `.fbx`, `.obj`, `.blend`, ...) and moves them into `assets/models/sketchfab/<slug>-<id>/` with a metadata stub.
+
+## Asset generation scripts
+
+- `npm run assets:sonic:add-idle` — rebuilds the runtime Sonic GLB (adds the
+  hand-authored `idle` animation and root/forward fixes) from the downloaded Sketchfab
+  archive.
+- `npm run assets:elements:palm-tree` — converts the Sonic Adventure 2 Green Hill palm
+  tree OBJ/MTL/PNG (expected in the author's `~/Downloads`) into
+  `assets/models/elements/green-hill-palm-tree/green-hill-palm-tree.glb`. Machine
+  specific: needs that source archive present locally.
+- `npm run assets:elements:green-hill` — regenerates the Blender-built Green Hill
+  environment set (`green-hill-terrain-set/loop/props/background.glb` plus procedural
+  checker textures) via `scripts/generate-green-hill-environment.py`. Requires Blender
+  on `PATH` or at `C:\Program Files\Blender Foundation\Blender *\blender.exe` (Windows).
+- `npm run assets:measure -- <path-to-glb> [--scale N] [--json]` — prints the bounding
+  box, size and mesh inventory of a GLB, useful for placing models at the right scale.
