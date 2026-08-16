@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import type { TerrainDefinition } from './LevelDefinition';
 import { Stage } from '../entities/Stage';
 import { Player } from '../entities/Player';
 import { Ring } from '../entities/Ring';
@@ -7,6 +8,7 @@ import { Badnik } from '../entities/Badnik';
 import { Monitor } from '../entities/Monitor';
 import { FinishSign } from '../entities/FinishSign';
 import { SceneryElement } from '../entities/SceneryElement';
+import type { Terrain } from '../core/Terrain';
 import { createGreenHillRuntimeArt, createGreenHillTerrainVisual } from './greenHillRuntimeArt';
 import type {
   BackgroundLayerDefinition,
@@ -14,8 +16,8 @@ import type {
   GameplayEntityDefinition,
   LevelDefinition,
   ModelDecorationDefinition,
+  PathTerrainDefinition,
   RuntimeDecorationDefinition,
-  TerrainDefinition,
 } from './LevelDefinition';
 
 export interface LevelLoadResult {
@@ -72,8 +74,11 @@ export class LevelLoader {
       stage.engine.renderer.scene.add(this.createBackgroundLayer(layer));
     }
 
-    for (const terrain of level.terrain) {
-      stage.engine.renderer.scene.add(this.createTerrain(terrain, level));
+    const terrain = stage.engine.terrain;
+    terrain.clear();
+    for (const terrainDefinition of level.terrain) {
+      stage.engine.renderer.scene.add(this.createTerrain(terrainDefinition, level));
+      this.addTerrainCollision(terrain, terrainDefinition);
     }
 
     const player = new Player(level.player.x, level.player.y);
@@ -121,10 +126,31 @@ export class LevelLoader {
     return mesh;
   }
 
+  private addTerrainCollision(terrain: Terrain, definition: TerrainDefinition): void {
+    if (definition.type === 'solid-platform') {
+      terrain.addSolidPlatform(definition.x, definition.y, definition.width, definition.height);
+      return;
+    }
+
+    terrain.addPath(
+      definition.points.map(point => ({ x: point.x, y: point.y })),
+      definition.closed ?? false,
+    );
+  }
+
   private createTerrain(definition: TerrainDefinition, level: LevelDefinition): THREE.Object3D {
     const materialDefinition = level.theme.terrainMaterials[definition.material];
     if (!materialDefinition) {
       throw new Error(`Terrain material "${definition.material}" is not defined by theme "${level.theme.id}".`);
+    }
+
+    if (definition.type === 'path') {
+      if (level.theme.id === 'green-hill') {
+        const visual = createGreenHillTerrainVisual(definition);
+        visual.position.z = definition.z ?? -20;
+        return visual;
+      }
+      return this.createGenericPathVisual(definition, materialDefinition.color);
     }
 
     if (level.theme.id === 'green-hill' && definition.material === 'green-hill-grass') {
@@ -138,6 +164,39 @@ export class LevelLoader {
     const mesh = new THREE.Mesh(geometry, material);
 
     mesh.position.set(definition.x, definition.y, definition.z ?? -20);
+    return mesh;
+  }
+
+  private createGenericPathVisual(definition: PathTerrainDefinition, color: number): THREE.Object3D {
+    const points = definition.points.map(point => new THREE.Vector2(point.x, point.y));
+    const thickness = definition.thickness ?? 40;
+
+    if (definition.closed) {
+      const centroid = points.reduce(
+        (acc, point) => acc.add(point),
+        new THREE.Vector2(0, 0),
+      ).divideScalar(points.length);
+      const outer = points.map(point => {
+        const direction = point.clone().sub(centroid).normalize();
+        return point.clone().add(direction.multiplyScalar(thickness));
+      });
+      const ring = new THREE.Shape(outer);
+      ring.holes.push(new THREE.Path(points));
+      return new THREE.Mesh(
+        new THREE.ShapeGeometry(ring),
+        new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide }),
+      );
+    }
+
+    const shape = new THREE.Shape(points);
+    for (let index = points.length - 1; index >= 0; index -= 1) {
+      shape.lineTo(points[index].x, points[index].y - thickness);
+    }
+    const mesh = new THREE.Mesh(
+      new THREE.ShapeGeometry(shape),
+      new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide }),
+    );
+    mesh.position.z = definition.z ?? -20;
     return mesh;
   }
 

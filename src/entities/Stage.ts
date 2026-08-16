@@ -55,6 +55,7 @@ export class Stage {
       }
     }
 
+    this.engine.terrain.clear();
     this.player = null;
   }
 

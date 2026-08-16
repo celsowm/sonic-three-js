@@ -3,6 +3,7 @@ export * from './core/Physics';
 export * from './core/Renderer';
 export * from './core/Input';
 export * from './core/events';
+export * from './core/Terrain';
 
 export * from './entities/Entity';
 export * from './entities/Player';

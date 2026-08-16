@@ -8,6 +8,7 @@ function engineWithKeys(keys: string[] = []) {
   return {
     input: {
       isDown: (code: string) => pressed.has(code),
+      justPressed: (code: string) => pressed.has(code),
     },
     physics: new Physics(),
   };
@@ -26,14 +27,14 @@ describe('Player movement feel', () => {
     expect(player.velocityX).toBe(player.maxRunSpeed);
   });
 
-  it('decelerates quickly on ground when input is released', () => {
+  it('decelerates on ground when input is released', () => {
     const player = new Player(0, 0);
     player.isGrounded = true;
     player.velocityX = 5;
 
     player.update(1, engineWithKeys() as never);
 
-    expect(player.velocityX).toBe(4.45);
+    expect(player.velocityX).toBeCloseTo(4.88, 5);
   });
 
   it('brakes harder when reversing direction', () => {

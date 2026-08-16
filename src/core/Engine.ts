@@ -2,6 +2,7 @@ import { Renderer } from './Renderer';
 import type { RendererOptions } from './Renderer';
 import { Physics } from './Physics';
 import { Input } from './Input';
+import { Terrain } from './Terrain';
 import { Entity } from '../entities/Entity';
 import { Emitter } from './events';
 
@@ -27,6 +28,8 @@ export class Engine {
   public renderer: Renderer;
   public physics: Physics;
   public input: Input;
+  /** Collision world built by the LevelLoader; empty means "legacy floor at y=0". */
+  public readonly terrain: Terrain = new Terrain();
   public entities: Entity[] = [];
   public readonly events = new Emitter<EngineEvents>();
 

@@ -47,13 +47,30 @@ export type GameplayEntityDefinition =
   | MonitorDefinition
   | FinishSignDefinition;
 
-export interface TerrainDefinition extends Vector2Definition {
+export interface SolidPlatformDefinition extends Vector2Definition {
   type: 'solid-platform';
   width: number;
   height: number;
   material: string;
   z?: number;
 }
+
+export interface PathTerrainDefinition {
+  type: 'path';
+  /**
+   * Walkable surface polyline in world space, ordered along the direction of
+   * travel. Closed paths (loops) must wind counter-clockwise so the walkable
+   * side faces the inside.
+   */
+  points: Vector2Definition[];
+  closed?: boolean;
+  material: string;
+  z?: number;
+  /** Visual thickness of the terrain fill below the surface. */
+  thickness?: number;
+}
+
+export type TerrainDefinition = SolidPlatformDefinition | PathTerrainDefinition;
 
 export interface ModelDecorationDefinition extends Vector2Definition {
   type: 'model';
@@ -103,6 +120,10 @@ export interface LevelDefinition {
   theme: StageThemeDefinition;
   camera: CameraDefinition;
   player: PlayerDefinition;
+  /** Y below which the player dies; defaults to a value far below the terrain. */
+  deathY?: number;
+  /** Respawn point; defaults to the player start position. */
+  spawn?: Vector2Definition;
   background: BackgroundLayerDefinition[];
   terrain: TerrainDefinition[];
   entities: GameplayEntityDefinition[];

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { RuntimeDecorationDefinition, TerrainDefinition } from './LevelDefinition';
+import type { PathTerrainDefinition, RuntimeDecorationDefinition, TerrainDefinition } from './LevelDefinition';
 
 const doubleSided = THREE.DoubleSide;
 
@@ -154,7 +154,93 @@ export const createGreenHillRuntimeArt = (art: RuntimeDecorationDefinition['art'
   }
 };
 
+const GREEN_HILL_GRASS_COLOR = 0x2fb332;
+const GREEN_HILL_DIRT_COLOR = 0x8e5818;
+const GREEN_HILL_DIRT_DARK_COLOR = 0x5b270d;
+
+/**
+ * Green-hill style terrain for path definitions: a dirt fill under the
+ * walkable polyline plus a grass cap that follows the surface angle. Closed
+ * paths (loops) become a filled ring with the walkable line as inner edge.
+ */
+export const createGreenHillPathVisual = (definition: PathTerrainDefinition): THREE.Object3D => {
+  const group = new THREE.Group();
+  const points = definition.points.map(point => new THREE.Vector2(point.x, point.y));
+  const thickness = definition.thickness ?? 40;
+
+  if (definition.closed) {
+    const centroid = points.reduce(
+      (acc, point) => acc.add(point),
+      new THREE.Vector2(0, 0),
+    ).divideScalar(points.length);
+
+    const outer = points.map(point => {
+      const direction = point.clone().sub(centroid).normalize();
+      return point.clone().add(direction.multiplyScalar(thickness));
+    });
+
+    const ring = new THREE.Shape(outer);
+    ring.holes.push(new THREE.Path(points));
+    const fill = new THREE.Mesh(
+      new THREE.ShapeGeometry(ring),
+      new THREE.MeshBasicMaterial({ color: GREEN_HILL_DIRT_COLOR, side: doubleSided }),
+    );
+    group.add(fill);
+    return group;
+  }
+
+  const shape = new THREE.Shape(points);
+  for (let index = points.length - 1; index >= 0; index -= 1) {
+    shape.lineTo(points[index].x, points[index].y - thickness);
+  }
+
+  group.add(new THREE.Mesh(
+    new THREE.ShapeGeometry(shape),
+    new THREE.MeshBasicMaterial({ color: GREEN_HILL_DIRT_COLOR, side: doubleSided }),
+  ));
+
+  // darker under-strip for depth, following the surface
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    const length = start.distanceTo(end);
+    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+    const midpoint = start.clone().add(end).multiplyScalar(0.5);
+    const normal = new THREE.Vector2(-Math.sin(angle), Math.cos(angle));
+
+    const cap = new THREE.Mesh(
+      new THREE.PlaneGeometry(length + 1, 5),
+      new THREE.MeshBasicMaterial({ color: GREEN_HILL_GRASS_COLOR, side: doubleSided }),
+    );
+    cap.position.set(
+      midpoint.x + normal.x * 2.5,
+      midpoint.y + normal.y * 2.5,
+      0.05,
+    );
+    cap.rotation.z = angle;
+    group.add(cap);
+
+    const underStrip = new THREE.Mesh(
+      new THREE.PlaneGeometry(length + 1, 4),
+      new THREE.MeshBasicMaterial({ color: GREEN_HILL_DIRT_DARK_COLOR, side: doubleSided }),
+    );
+    underStrip.position.set(
+      midpoint.x - normal.x * 2.5,
+      midpoint.y - normal.y * 2.5,
+      0.02,
+    );
+    underStrip.rotation.z = angle;
+    group.add(underStrip);
+  }
+
+  return group;
+};
+
 export const createGreenHillTerrainVisual = (definition: TerrainDefinition): THREE.Object3D => {
+  if (definition.type === 'path') {
+    return createGreenHillPathVisual(definition);
+  }
+
   const group = new THREE.Group();
   const topThickness = 6;
   const bodyHeight = definition.height;
