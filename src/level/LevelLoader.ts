@@ -22,15 +22,45 @@ export interface LevelLoadResult {
   player: Player;
 }
 
+export interface LevelLoaderOptions {
+  /**
+   * Base URL that hosts the engine's `assets/` directory, for consumers that
+   * bundle assets separately (e.g. `https://cdn.example.com/sonic-assets`).
+   * Defaults to the assets bundled next to the library.
+   */
+  assetBase?: string;
+  /** Reports incremental loading progress of all async assets of a level. */
+  onProgress?: (loaded: number, total: number) => void;
+}
+
+interface LoadedModel {
+  scene: THREE.Group;
+  animations: THREE.AnimationClip[];
+}
+
 export class LevelLoader {
   private readonly gltfLoader: GLTFLoader;
-  private readonly modelCache = new Map<string, Promise<THREE.Group>>();
+  private readonly options: LevelLoaderOptions;
+  private readonly modelCache = new Map<string, Promise<LoadedModel>>();
 
-  constructor(gltfLoader = new GLTFLoader()) {
+  constructor(gltfLoader = new GLTFLoader(), options: LevelLoaderOptions = {}) {
     this.gltfLoader = gltfLoader;
+    this.options = options;
   }
 
   public async load(stage: Stage, level: LevelDefinition): Promise<LevelLoadResult> {
+    const modelDecorationCount = level.decorations.filter(
+      decoration => decoration.type === 'model',
+    ).length;
+    const totalLoads = modelDecorationCount + (level.player.model ? 1 : 0);
+    let completedLoads = 0;
+    const track = <T>(promise: Promise<T>): Promise<T> => promise.finally(() => {
+      completedLoads += 1;
+      this.options.onProgress?.(completedLoads, totalLoads);
+    });
+
+    this.options.onProgress?.(0, totalLoads);
+
     stage.configureCamera({
       followOffsetX: level.camera.followOffsetX,
       followOffsetY: level.camera.followOffsetY,
@@ -50,14 +80,17 @@ export class LevelLoader {
     stage.addEntity(player);
 
     if (level.player.model === 'classic-sonic-runners') {
-      this.loadClassicSonicModel(player);
+      await track(this.loadClassicSonicModel(player));
     }
 
     for (const entity of level.entities) {
       stage.addEntity(this.createGameplayEntity(entity));
     }
 
-    await Promise.all(level.decorations.map(decoration => this.addDecoration(stage, level, decoration)));
+    await Promise.all(level.decorations.map(decoration => {
+      const loaded = this.addDecoration(stage, level, decoration);
+      return decoration.type === 'model' ? track(loaded) : loaded;
+    }));
 
     return { player };
   }
@@ -72,6 +105,10 @@ export class LevelLoader {
         return new Monitor(definition.x, definition.y, definition.monitorType ?? 'rings');
       case 'finish-sign':
         return new FinishSign(definition.x, definition.y);
+      default: {
+        const unknown = definition as { type: string };
+        throw new Error(`Unknown gameplay entity type "${unknown.type}" in level data.`);
+      }
     }
   }
 
@@ -129,7 +166,7 @@ export class LevelLoader {
 
     const model = await this.loadModel(asset.url);
     stage.addEntity(new SceneryElement(definition.x, definition.y, {
-      mesh: model.clone(true),
+      mesh: model.scene.clone(true),
       scale: definition.scale ?? 1,
       offset: { x: 0, y: 0, z: definition.z ?? -20 },
       rotation: definition.rotation,
@@ -150,31 +187,36 @@ export class LevelLoader {
     }));
   }
 
-  private loadClassicSonicModel(player: Player): void {
-    const url = new URL(
-      '../../assets/models/sonic/classic-sonic-runners/classic-sonic-runners.glb',
-      import.meta.url,
-    ).href;
-
-    this.gltfLoader.load(
-      url,
-      gltf => {
-        player.setAnimatedModel(gltf.scene, gltf.animations, {
-          scale: 8,
-          offset: { x: 0, y: -5, z: 0 },
-        });
-      },
-      undefined,
-      error => {
-        console.warn('Failed to load Sonic Runners model, using placeholder player.', error);
-      },
+  private async loadClassicSonicModel(player: Player): Promise<void> {
+    const url = this.resolveAssetUrl(
+      'models/sonic/classic-sonic-runners/classic-sonic-runners.glb',
+      new URL('../../assets/models/sonic/classic-sonic-runners/classic-sonic-runners.glb', import.meta.url).href,
     );
+
+    try {
+      const model = await this.loadModel(url);
+      player.setAnimatedModel(model.scene, model.animations, {
+        scale: 8,
+        offset: { x: 0, y: -5, z: 0 },
+      });
+    } catch (error) {
+      console.warn('Failed to load Sonic Runners model, using placeholder player.', error);
+    }
   }
 
-  private loadModel(url: string): Promise<THREE.Group> {
+  private resolveAssetUrl(pathRelativeToAssets: string, bundledUrl: string): string {
+    if (this.options.assetBase) {
+      return `${this.options.assetBase.replace(/\/+$/, '')}/${pathRelativeToAssets}`;
+    }
+    return bundledUrl;
+  }
+
+  private loadModel(url: string): Promise<LoadedModel> {
     if (!this.modelCache.has(url)) {
       this.modelCache.set(url, new Promise((resolve, reject) => {
-        this.gltfLoader.load(url, gltf => resolve(gltf.scene), undefined, reject);
+        this.gltfLoader.load(url, gltf => {
+          resolve({ scene: gltf.scene, animations: gltf.animations });
+        }, undefined, reject);
       }));
     }
 

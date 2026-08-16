@@ -14,6 +14,9 @@ export abstract class Entity {
 
   public mesh?: THREE.Object3D;
 
+  /** Entities that never react to overlaps (scenery) are skipped by the collision pass. */
+  public collidable: boolean = true;
+
   public destroyFlag: boolean = false;
 
   constructor(x: number, y: number, width: number, height: number) {

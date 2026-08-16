@@ -20,6 +20,7 @@ export class SceneryElement extends Entity {
 
   constructor(x: number, y: number, options: SceneryElementOptions = {}) {
     super(x, y, options.width ?? 0, options.height ?? 0);
+    this.collidable = false;
 
     this.root = new THREE.Group();
     this.mesh = this.root;

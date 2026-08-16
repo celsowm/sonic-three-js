@@ -12,19 +12,16 @@ export class Renderer {
   private container: HTMLElement;
   private cameraMode: 'side-scroller' | 'perspective';
   private visibleHeight: number;
+  private readonly onWindowResize = (): void => this.resize();
 
-  constructor(containerId: string, options: RendererOptions | boolean = {}) {
+  constructor(containerId: string, options: RendererOptions = {}) {
     const el = document.getElementById(containerId);
     if (!el) throw new Error(`Container ${containerId} not found`);
     this.container = el;
 
     this.scene = new THREE.Scene();
-    this.cameraMode = typeof options === 'boolean'
-      ? (options ? 'side-scroller' : 'perspective')
-      : options.cameraMode ?? 'side-scroller';
-    this.visibleHeight = typeof options === 'boolean'
-      ? 100
-      : options.visibleHeight ?? 100;
+    this.cameraMode = options.cameraMode ?? 'side-scroller';
+    this.visibleHeight = options.visibleHeight ?? 100;
 
     const width = this.container.clientWidth || window.innerWidth;
     const height = this.container.clientHeight || window.innerHeight;
@@ -57,10 +54,10 @@ export class Renderer {
     dirLight.position.set(10, 20, 10);
     this.scene.add(dirLight);
 
-    window.addEventListener('resize', this.onWindowResize.bind(this));
+    window.addEventListener('resize', this.onWindowResize);
   }
 
-  private onWindowResize() {
+  private resize(): void {
     const width = this.container.clientWidth || window.innerWidth;
     const height = this.container.clientHeight || window.innerHeight;
 
@@ -79,7 +76,7 @@ export class Renderer {
     this.renderer.setSize(width, height);
   }
 
-  public render() {
+  public render(): void {
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -89,6 +86,14 @@ export class Renderer {
     }
 
     this.visibleHeight = visibleHeight;
-    this.onWindowResize();
+    this.resize();
+  }
+
+  public destroy(): void {
+    window.removeEventListener('resize', this.onWindowResize);
+    this.renderer.dispose();
+    if (this.renderer.domElement.parentElement === this.container) {
+      this.container.removeChild(this.renderer.domElement);
+    }
   }
 }

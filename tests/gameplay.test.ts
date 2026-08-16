@@ -59,7 +59,7 @@ describe('Gameplay E2E Simulation', () => {
     player.width = 10; player.height = 10;
     ring.width = 8; ring.height = 8;
 
-    stage.engine['update'](0.1);
+    stage.engine.step(6);
 
     expect(player.rings).toBe(1);
     expect(player.score).toBe(10);
@@ -75,7 +75,7 @@ describe('Gameplay E2E Simulation', () => {
     player.velocityX = 0;
     player.velocityY = 0;
 
-    stage.engine['update'](1 / 60);
+    stage.engine.step();
 
     expect(player.rings).toBe(1);
     expect(player.score).toBe(10);
