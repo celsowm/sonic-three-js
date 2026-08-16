@@ -37,7 +37,8 @@ export class Player extends Entity {
   public rollingDeceleration: number = 0.08;
   public airDrag: number = 0.995;
   public maxRunSpeed: number = 8.5;
-  public jumpForce: number = 9;
+  /** Launch speed ~1 screen; peaks around 90 units with default gravity. */
+  public jumpForce: number = 6;
 
   /** Slope acceleration while running (classic Sonic slope factor). */
   public slopeFactor: number = 0.125;

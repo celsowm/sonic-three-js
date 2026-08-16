@@ -58,7 +58,7 @@ describe('Gameplay mechanics', () => {
     spring.onCollision(player);
 
     expect(player.isGrounded).toBe(false);
-    expect(player.velocityY).toBe(12.5);
+    expect(player.velocityY).toBe(9);
     expect(player.velocityX).toBe(0);
   });
 
@@ -68,8 +68,8 @@ describe('Gameplay mechanics', () => {
 
     spring.onCollision(player);
 
-    expect(player.velocityX).toBeGreaterThan(8);
-    expect(player.velocityY).toBeGreaterThan(8);
+    expect(player.velocityX).toBeGreaterThan(6);
+    expect(player.velocityY).toBeGreaterThan(6);
   });
 
   it('springs have a cooldown and cannot retrigger every frame', () => {

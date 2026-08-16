@@ -80,6 +80,10 @@ export interface PathTerrainDefinition {
   z?: number;
   /** Visual thickness of the terrain fill below the surface. */
   thickness?: number;
+  /** Collision only, no rendered fill (e.g. self-overlapping loop carriers). */
+  collisionOnly?: boolean;
+  /** Rendered fill only, no collision. */
+  visualOnly?: boolean;
 }
 
 export type TerrainDefinition = SolidPlatformDefinition | PathTerrainDefinition;

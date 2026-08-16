@@ -228,7 +228,7 @@ describe('Player terrain physics', () => {
     attach(player, terrain, 0, 10, 0);
 
     player.update(1, engineWithTerrain(terrain, ['Space']) as never);
-    expect(player.velocityY).toBe(9);
+    expect(player.velocityY).toBe(6);
 
     // button released while ascending: cut to 4, then one frame of gravity
     player.update(1, engineWithTerrain(terrain) as never);

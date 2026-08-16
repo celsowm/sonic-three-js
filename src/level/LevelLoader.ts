@@ -79,8 +79,13 @@ export class LevelLoader {
     const terrain = stage.engine.terrain;
     terrain.clear();
     for (const terrainDefinition of level.terrain) {
-      stage.engine.renderer.scene.add(this.createTerrain(terrainDefinition, level));
-      this.addTerrainCollision(terrain, terrainDefinition);
+      const visual = this.createTerrain(terrainDefinition, level);
+      if (visual) {
+        stage.engine.renderer.scene.add(visual);
+      }
+      if (!(terrainDefinition.type === 'path' && terrainDefinition.visualOnly)) {
+        this.addTerrainCollision(terrain, terrainDefinition);
+      }
     }
 
     const player = new Player(level.player.x, level.player.y);
@@ -166,13 +171,16 @@ export class LevelLoader {
     );
   }
 
-  private createTerrain(definition: TerrainDefinition, level: LevelDefinition): THREE.Object3D {
+  private createTerrain(definition: TerrainDefinition, level: LevelDefinition): THREE.Object3D | null {
     const materialDefinition = level.theme.terrainMaterials[definition.material];
     if (!materialDefinition) {
       throw new Error(`Terrain material "${definition.material}" is not defined by theme "${level.theme.id}".`);
     }
 
     if (definition.type === 'path') {
+      if (definition.collisionOnly) {
+        return null;
+      }
       if (level.theme.id === 'green-hill') {
         const visual = createGreenHillTerrainVisual(definition);
         visual.position.z = definition.z ?? -20;

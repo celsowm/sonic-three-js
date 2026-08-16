@@ -29,7 +29,7 @@ export class Spring extends Entity {
     super(x, y, 18, 8);
 
     this.direction = options.direction ?? 'up';
-    this.force = options.force ?? 12.5;
+    this.force = options.force ?? 9;
 
     this.mesh = this.buildSpring();
     this.topGroup = this.mesh!.children[1] as THREE.Group;
