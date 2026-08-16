@@ -1,0 +1,11 @@
+{
+  "name": "Green Hill Stage Textures",
+  "source": "Generated procedurally by scripts/generate-green-hill-textures.mjs; palette sampled from the Sonic 1 Green Hill tileset.",
+  "files": [
+    "dirt-checker.png",
+    "dirt-band.png",
+    "grass-top.png",
+    "grass-front.png"
+  ],
+  "generatedAt": "2026-08-16T18:00:49.675Z"
+}

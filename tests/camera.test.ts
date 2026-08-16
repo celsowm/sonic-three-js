@@ -64,3 +64,40 @@ describe('Side-scroller camera', () => {
     expect(stage.engine.renderer.camera.position.y).toBe(29);
   });
 });
+
+describe('Perspective camera', () => {
+  let container: HTMLDivElement;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    container.id = 'game-container';
+    Object.defineProperty(container, 'clientWidth', { value: 1280, configurable: true });
+    Object.defineProperty(container, 'clientHeight', { value: 720, configurable: true });
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    document.body.removeChild(container);
+    vi.clearAllMocks();
+  });
+
+  it('places the camera so the gameplay plane keeps the requested visible height', () => {
+    const renderer = new Renderer('game-container', { cameraMode: 'perspective', visibleHeight: 96, fov: 40 });
+    const camera = renderer.camera as THREE.PerspectiveCamera;
+
+    expect(camera).toBeInstanceOf(THREE.PerspectiveCamera);
+    expect(camera.fov).toBe(40);
+    // distance = (visibleHeight / 2) / tan(fov / 2)
+    const expected = 48 / Math.tan(THREE.MathUtils.degToRad(20));
+    expect(camera.position.z).toBeCloseTo(expected, 6);
+  });
+
+  it('keeps the calibrated distance when the visible height changes', () => {
+    const renderer = new Renderer('game-container', { cameraMode: 'perspective', visibleHeight: 96, fov: 40 });
+
+    renderer.setVisibleHeight(120);
+    const camera = renderer.camera as THREE.PerspectiveCamera;
+    expect(camera.position.z).toBeCloseTo(60 / Math.tan(THREE.MathUtils.degToRad(20)), 6);
+    expect(camera.aspect).toBeCloseTo(1280 / 720, 6);
+  });
+});

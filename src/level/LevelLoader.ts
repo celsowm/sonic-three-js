@@ -11,7 +11,11 @@ import { Spring } from '../entities/Spring';
 import { Checkpoint } from '../entities/Checkpoint';
 import { SceneryElement } from '../entities/SceneryElement';
 import type { Terrain } from '../core/Terrain';
-import { createGreenHillRuntimeArt, createGreenHillTerrainVisual } from './greenHillRuntimeArt';
+import {
+  GREEN_HILL_TERRAIN_TEXTURE_KEYS,
+  createGreenHill3DTerrain,
+} from './greenHillTerrain3D';
+import type { GreenHillTerrainTextures } from './greenHillTerrain3D';
 import type {
   BackgroundLayerDefinition,
   DecorationDefinition,
@@ -19,7 +23,6 @@ import type {
   LevelDefinition,
   ModelDecorationDefinition,
   PathTerrainDefinition,
-  RuntimeDecorationDefinition,
 } from './LevelDefinition';
 
 export interface LevelLoadResult {
@@ -35,6 +38,8 @@ export interface LevelLoaderOptions {
   assetBase?: string;
   /** Reports incremental loading progress of all async assets of a level. */
   onProgress?: (loaded: number, total: number) => void;
+  /** Injected texture loader, e.g. a mock in tests. */
+  textureLoader?: THREE.TextureLoader;
 }
 
 interface LoadedModel {
@@ -45,10 +50,31 @@ interface LoadedModel {
 const isGltfLoader = (value: unknown): value is GLTFLoader =>
   typeof value === 'object' && value !== null && 'load' in value;
 
+/** Swaps PBR materials for unlit ones so textured props keep their authored colors. */
+const makeModelUnlit = (root: THREE.Object3D): void => {
+  root.traverse(node => {
+    if (!(node instanceof THREE.Mesh)) {
+      return;
+    }
+    const material = node.material as THREE.MeshStandardMaterial | THREE.MeshStandardMaterial[];
+    const convert = (value: THREE.MeshStandardMaterial): THREE.MeshBasicMaterial =>
+      new THREE.MeshBasicMaterial({
+        map: value.map ?? null,
+        color: value.color.clone(),
+        side: THREE.DoubleSide,
+      });
+    node.material = Array.isArray(material)
+      ? material.map(convert)
+      : convert(material);
+  });
+};
+
 export class LevelLoader {
   private readonly gltfLoader: GLTFLoader;
   private readonly options: LevelLoaderOptions;
+  private readonly textureLoader: THREE.TextureLoader;
   private readonly modelCache = new Map<string, Promise<LoadedModel>>();
+  private readonly textureCache = new Map<string, Promise<THREE.Texture>>();
 
   constructor(
     optionsOrLoader: LevelLoaderOptions | GLTFLoader = {},
@@ -61,13 +87,15 @@ export class LevelLoader {
       this.gltfLoader = new GLTFLoader();
       this.options = optionsOrLoader;
     }
+    this.textureLoader = this.options.textureLoader ?? new THREE.TextureLoader();
   }
 
   public async load(stage: Stage, level: LevelDefinition): Promise<LevelLoadResult> {
     const modelDecorationCount = level.decorations.filter(
       decoration => decoration.type === 'model',
     ).length;
-    const totalLoads = modelDecorationCount + (level.player.model ? 1 : 0);
+    const textureEntries = Object.entries(level.theme.textures ?? {});
+    const totalLoads = modelDecorationCount + textureEntries.length + (level.player.model ? 1 : 0);
     let completedLoads = 0;
     const track = <T>(promise: Promise<T>): Promise<T> => promise.finally(() => {
       completedLoads += 1;
@@ -87,10 +115,20 @@ export class LevelLoader {
       stage.engine.renderer.scene.add(this.createBackgroundLayer(layer));
     }
 
+    const themeTextures = new Map<string, THREE.Texture>();
+    if (textureEntries.length > 0) {
+      const loaded = await Promise.all(textureEntries.map(([name, definition]) =>
+        track(this.loadTexture(definition.url)).then(texture => [name, texture] as const),
+      ));
+      for (const [name, texture] of loaded) {
+        themeTextures.set(name, texture);
+      }
+    }
+
     const terrain = stage.engine.terrain;
     terrain.clear();
     for (const terrainDefinition of level.terrain) {
-      const visual = this.createTerrain(terrainDefinition, level);
+      const visual = this.createTerrain(terrainDefinition, level, themeTextures);
       if (visual) {
         stage.engine.renderer.scene.add(visual);
       }
@@ -115,10 +153,9 @@ export class LevelLoader {
       stage.addEntity(this.createGameplayEntity(entity));
     }
 
-    await Promise.all(level.decorations.map(decoration => {
-      const loaded = this.addDecoration(stage, level, decoration);
-      return decoration.type === 'model' ? track(loaded) : loaded;
-    }));
+    await Promise.all(level.decorations.map(decoration =>
+      track(this.addDecoration(stage, level, decoration)),
+    ));
 
     return { player };
   }
@@ -182,7 +219,11 @@ export class LevelLoader {
     );
   }
 
-  private createTerrain(definition: TerrainDefinition, level: LevelDefinition): THREE.Object3D | null {
+  private createTerrain(
+    definition: TerrainDefinition,
+    level: LevelDefinition,
+    themeTextures: Map<string, THREE.Texture>,
+  ): THREE.Object3D | null {
     const materialDefinition = level.theme.terrainMaterials[definition.material];
     if (!materialDefinition) {
       throw new Error(`Terrain material "${definition.material}" is not defined by theme "${level.theme.id}".`);
@@ -193,17 +234,13 @@ export class LevelLoader {
         return null;
       }
       if (level.theme.id === 'green-hill') {
-        const visual = createGreenHillTerrainVisual(definition);
-        visual.position.z = definition.z ?? -20;
-        return visual;
+        return createGreenHill3DTerrain(definition, this.greenHillTextures(level, themeTextures));
       }
       return this.createGenericPathVisual(definition, materialDefinition.color);
     }
 
     if (level.theme.id === 'green-hill' && definition.material === 'green-hill-grass') {
-      const terrain = createGreenHillTerrainVisual(definition);
-      terrain.position.set(definition.x, definition.y, definition.z ?? -20);
-      return terrain;
+      return createGreenHill3DTerrain(definition, this.greenHillTextures(level, themeTextures));
     }
 
     const geometry = new THREE.PlaneGeometry(definition.width, definition.height);
@@ -252,11 +289,6 @@ export class LevelLoader {
     level: LevelDefinition,
     definition: DecorationDefinition,
   ): Promise<void> {
-    if (definition.type === 'runtime-art') {
-      this.addRuntimeDecoration(stage, definition);
-      return;
-    }
-
     await this.addModelDecoration(stage, level, definition);
   }
 
@@ -271,20 +303,18 @@ export class LevelLoader {
     }
 
     const model = await this.loadModel(asset.url);
+    const source = definition.node
+      ? model.scene.getObjectByName(definition.node)
+      : model.scene;
+    if (!source) {
+      throw new Error(`Decoration asset "${definition.asset}" has no node named "${definition.node}".`);
+    }
+    const mesh = source.clone(true);
+    if (definition.unlit) {
+      makeModelUnlit(mesh);
+    }
     stage.addEntity(new SceneryElement(definition.x, definition.y, {
-      mesh: model.scene.clone(true),
-      scale: definition.scale ?? 1,
-      offset: { x: 0, y: 0, z: definition.z ?? -20 },
-      rotation: definition.rotation,
-      width: 0,
-      height: 0,
-    }));
-  }
-
-  private addRuntimeDecoration(stage: Stage, definition: RuntimeDecorationDefinition): void {
-    const art = createGreenHillRuntimeArt(definition.art);
-    stage.addEntity(new SceneryElement(definition.x, definition.y, {
-      mesh: art,
+      mesh,
       scale: definition.scale ?? 1,
       offset: { x: 0, y: 0, z: definition.z ?? -20 },
       rotation: definition.rotation,
@@ -308,6 +338,34 @@ export class LevelLoader {
     } catch (error) {
       console.warn('Failed to load Sonic Runners model, using placeholder player.', error);
     }
+  }
+
+  private greenHillTextures(
+    level: LevelDefinition,
+    themeTextures: Map<string, THREE.Texture>,
+  ): GreenHillTerrainTextures {
+    const pick = (key: string): THREE.Texture => {
+      const texture = themeTextures.get(key);
+      if (!texture) {
+        throw new Error(`Theme "${level.theme.id}" is missing the "${key}" texture required by 3D terrain.`);
+      }
+      return texture;
+    };
+    return {
+      dirtChecker: pick(GREEN_HILL_TERRAIN_TEXTURE_KEYS.dirtChecker),
+      dirtBand: pick(GREEN_HILL_TERRAIN_TEXTURE_KEYS.dirtBand),
+      grassTop: pick(GREEN_HILL_TERRAIN_TEXTURE_KEYS.grassTop),
+      grassFront: pick(GREEN_HILL_TERRAIN_TEXTURE_KEYS.grassFront),
+    };
+  }
+
+  private loadTexture(url: string): Promise<THREE.Texture> {
+    if (!this.textureCache.has(url)) {
+      this.textureCache.set(url, new Promise((resolve, reject) => {
+        this.textureLoader.load(url, resolve, undefined, reject);
+      }));
+    }
+    return this.textureCache.get(url)!;
   }
 
   private resolveAssetUrl(pathRelativeToAssets: string, bundledUrl: string): string {

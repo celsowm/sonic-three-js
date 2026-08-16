@@ -4,7 +4,7 @@ import os
 import sys
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 
 OUTPUT_DIR = sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else os.path.join(
@@ -198,6 +198,21 @@ def make_loop():
     export_glb("green-hill-loop.glb")
 
 
+def prop_group(name):
+    """Named empty exported as a glTF node, so the engine can pick individual
+    props out of the collection GLB via getObjectByName."""
+    group = bpy.data.objects.new(name, None)
+    group.empty_display_type = "PLAIN_AXES"
+    bpy.context.collection.objects.link(group)
+    return group
+
+
+def parent(group, obj):
+    obj.parent = group
+    obj.matrix_parent_inverse = Matrix.Identity(4)
+    return obj
+
+
 def make_props():
     clear_scene()
     bark = material("warm palm bark", (0.48, 0.24, 0.09, 1))
@@ -210,32 +225,63 @@ def make_props():
     totem = material("painted island totem", (0.76, 0.45, 0.18, 1))
     black = material("dark detail", (0.03, 0.025, 0.02, 1))
 
-    for px, height, lean in [(-18, 22, -8), (5, 18, 6)]:
-        trunk = add_cylinder("segmented palm trunk", (px, height / 2, 0), 1.2, height, bark, vertices=12)
-        trunk.rotation_euler[2] = math.radians(lean)
+    # Local coordinates: Blender Z is up (glTF Y), Blender -Y faces the camera
+    # (glTF +Z). Props are grouped under named empties so the level can place
+    # each one individually.
+
+    for name, height, lean in [("ghz-palm-tall", 22, -8), ("ghz-palm-short", 18, 6)]:
+        group = prop_group(name)
+        lean_rad = math.radians(lean)
+        trunk = add_cylinder("segmented palm trunk", (0, 0, height / 2), 1.2, height, bark, vertices=12)
+        trunk.rotation_euler = (0, lean_rad, 0)
+        parent(group, trunk)
+        top_x = math.sin(lean_rad) * height
+        top_z = math.cos(lean_rad) * height
         for idx in range(6):
             angle = math.radians(idx * 60)
-            leaf = add_cone("wide palm frond", (px + math.cos(angle) * 3.2, height + math.sin(angle) * 1.2, math.sin(angle) * 2.2), 1.15, 0.12, 9, palm, vertices=6)
-            leaf.rotation_euler = (math.radians(80), 0, angle)
-            leaf.scale.x = 0.55
-            shade_smooth(leaf)
+            frond = add_cone(
+                "wide palm frond",
+                (top_x + math.cos(angle) * 2.6, 0, top_z + math.sin(angle) * 0.9),
+                1.15,
+                0.12,
+                9,
+                palm,
+                vertices=6,
+            )
+            frond.rotation_euler = (math.radians(95), 0, angle)
+            frond.scale.x = 0.55
+            shade_smooth(frond)
+            parent(group, frond)
 
-    for x, mat in [(-3, flower_red), (11, flower_blue), (17, flower_red)]:
-        add_cylinder("flower stem", (x, 2, 1.5), 0.08, 4, palm, vertices=8)
+    for name, petal_mat in [("ghz-flower-red", flower_red), ("ghz-flower-blue", flower_blue), ("ghz-flower-red-b", flower_red)]:
+        group = prop_group(name)
+        parent(group, add_cylinder("flower stem", (0, 0, 2), 0.08, 4, palm, vertices=8))
         for angle in range(0, 360, 72):
             radians = math.radians(angle)
-            petal = add_uv_sphere("round flower petal", (x + math.cos(radians) * 0.7, 4.2 + math.sin(radians) * 0.35, 1.5), 0.38, mat, scale=(1.3, 0.7, 0.25))
+            petal = add_uv_sphere(
+                "round flower petal",
+                (math.cos(radians) * 0.7, 0, 4.2 + math.sin(radians) * 0.3),
+                0.38,
+                petal_mat,
+                scale=(1.3, 0.25, 0.7),
+            )
             shade_smooth(petal)
-        shade_smooth(add_uv_sphere("flower center", (x, 4.2, 1.5), 0.32, flower_yellow, scale=(1, 1, 0.45)))
+            parent(group, petal)
+        shade_smooth(parent(group, add_uv_sphere("flower center", (0, 0, 4.2), 0.32, flower_yellow, scale=(1, 0.45, 1))))
 
-    shade_smooth(add_uv_sphere("rounded foreground rock", (-8, 1.8, 2.2), 2.3, stone, scale=(1.6, 0.85, 0.75)))
-    add_cube("green hill sign post", (24, 3, 0), (1.2, 6, 1), bark)
-    add_cube("green hill sign board", (24, 7.2, 0), (8, 3.5, 0.8), sign)
-    add_cube("sign dark stripe", (24, 7.2, 0.45), (6.4, 0.55, 0.25), black)
-    add_cube("totem body", (34, 5, 0), (4, 10, 3), totem)
-    add_cube("totem eye left", (33.1, 7, 1.55), (0.6, 0.6, 0.2), black)
-    add_cube("totem eye right", (34.9, 7, 1.55), (0.6, 0.6, 0.2), black)
-    add_cube("totem mouth", (34, 4.2, 1.55), (2.1, 0.45, 0.2), black)
+    group = prop_group("ghz-rock")
+    shade_smooth(parent(group, add_uv_sphere("rounded foreground rock", (0, 0, 1.6), 2.3, stone, scale=(1.6, 0.75, 0.85))))
+
+    group = prop_group("ghz-sign")
+    parent(group, add_cube("green hill sign post", (0, 0, 3), (1.2, 1, 6), bark))
+    parent(group, add_cube("green hill sign board", (0, -0.2, 7.2), (8, 0.8, 3.5), sign))
+    parent(group, add_cube("sign dark stripe", (0, -0.55, 7.2), (6.4, 0.25, 0.55), black))
+
+    group = prop_group("ghz-totem")
+    parent(group, add_cube("totem body", (0, 0, 5), (4, 3, 10), totem))
+    parent(group, add_cube("totem eye left", (-1.1, -1.55, 7), (0.6, 0.2, 0.6), black))
+    parent(group, add_cube("totem eye right", (1.1, -1.55, 7), (0.6, 0.2, 0.6), black))
+    parent(group, add_cube("totem mouth", (0, -1.58, 4.2), (2.1, 0.2, 0.45), black))
     export_glb("green-hill-props.glb")
 
 
@@ -246,15 +292,17 @@ def make_background():
     cloud = material("soft cloud", (0.96, 0.98, 1, 1))
     water = material("far ocean band", (0.08, 0.42, 0.78, 1))
 
-    add_cube("ocean horizon band", (0, -22, -8), (160, 14, 1), water)
+    group = prop_group("ghz-backdrop")
+    parent(group, add_cube("ocean horizon band", (0, 0, -22), (160, 1, 14), water))
     for x, radius, mat in [(-46, 21, hill_a), (-15, 30, hill_b), (25, 24, hill_a), (58, 18, hill_b)]:
-        hill = add_uv_sphere("rounded parallax hill", (x, -22, -6), radius, mat, scale=(1.8, 0.72, 0.08), segments=32, rings=12)
+        hill = add_uv_sphere("rounded parallax hill", (x, -6, -18), radius, mat, scale=(1.8, 0.7, 0.65), segments=32, rings=12)
         shade_smooth(hill)
+        parent(group, hill)
 
     for x, y in [(-45, 22), (5, 31), (46, 20)]:
-        shade_smooth(add_uv_sphere("cloud lobe", (x, y, -7), 5.2, cloud, scale=(1.5, 0.6, 0.12)))
-        shade_smooth(add_uv_sphere("cloud lobe", (x + 5, y + 1.3, -7), 4.0, cloud, scale=(1.4, 0.55, 0.12)))
-        shade_smooth(add_uv_sphere("cloud lobe", (x - 5, y - 0.7, -7), 3.6, cloud, scale=(1.2, 0.5, 0.12)))
+        shade_smooth(parent(group, add_uv_sphere("cloud lobe", (x, -7, y), 5.2, cloud, scale=(1.5, 0.5, 0.6))))
+        shade_smooth(parent(group, add_uv_sphere("cloud lobe", (x + 5, -7, y + 1.3), 4.0, cloud, scale=(1.4, 0.5, 0.55))))
+        shade_smooth(parent(group, add_uv_sphere("cloud lobe", (x - 5, -7, y - 0.7), 3.6, cloud, scale=(1.2, 0.5, 0.5))))
 
     export_glb("green-hill-background.glb")
 

@@ -29,7 +29,14 @@ export async function runDemo(level: LevelDefinition, options: DemoOptions = {})
   if (!container) throw new Error(`#${containerId} not found`);
 
   const loading = new LoadingScreen(containerId);
-  const stage = new Stage(containerId);
+  const stage = new Stage(containerId, {
+    engine: {
+      renderer: {
+        cameraMode: level.camera.mode,
+        fov: level.camera.fov,
+      },
+    },
+  });
   const hud = new HUD(containerId);
   const results = new ResultsOverlay(containerId);
   const debug = new DebugOverlay(containerId, stage, options.debug ?? wantsDebugFromUrl());

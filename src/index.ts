@@ -18,6 +18,7 @@ export * from './entities/SceneryElement';
 
 export * from './level/LevelDefinition';
 export * from './level/LevelLoader';
+export * from './level/greenHillTerrain3D';
 export * from './levels/greenHillAct1';
 export * from './levels/physicsPlayground';
 

@@ -2,23 +2,41 @@ import type { LevelDefinition, StageThemeDefinition, TerrainDefinition, Vector2D
 
 const GREEN_HILL_ENVIRONMENT_URL = '../../assets/models/elements/green-hill-environment/';
 const GREEN_HILL_PALM_URL = '../../assets/models/elements/green-hill-palm-tree/green-hill-palm-tree.glb';
+const GREEN_HILL_TEXTURES_URL = '../../assets/textures/green-hill/';
 
 const environmentAssetUrl = (fileName: string) => new URL(
   `${GREEN_HILL_ENVIRONMENT_URL}${fileName}`,
   import.meta.url,
 ).href;
 
+const textureUrl = (name: string) => new URL(
+  `${GREEN_HILL_TEXTURES_URL}${name}.png`,
+  import.meta.url,
+).href;
+
 export const greenHillTheme: StageThemeDefinition = {
   id: 'green-hill',
-  skyColor: 0x8ed8f7,
+  skyColor: 0x0098f0,
   terrainMaterials: {
     'green-hill-grass': {
-      color: 0x2ea334,
+      color: 0x48b400,
     },
+  },
+  textures: {
+    'dirt-checker': { url: textureUrl('dirt-checker') },
+    'dirt-band': { url: textureUrl('dirt-band') },
+    'grass-top': { url: textureUrl('grass-top') },
+    'grass-front': { url: textureUrl('grass-front') },
   },
   decorations: {
     'green-hill-loop': {
       url: environmentAssetUrl('green-hill-loop.glb'),
+    },
+    'green-hill-props': {
+      url: environmentAssetUrl('green-hill-props.glb'),
+    },
+    'green-hill-background': {
+      url: environmentAssetUrl('green-hill-background.glb'),
     },
     'green-hill-palm-tree': {
       url: new URL(GREEN_HILL_PALM_URL, import.meta.url).href,
@@ -118,6 +136,8 @@ export const greenHillAct1: LevelDefinition = {
     visibleHeight: 96,
     followOffsetX: 22,
     followOffsetY: 24,
+    mode: 'perspective',
+    fov: 40,
   },
   player: {
     x: 0,
@@ -132,7 +152,7 @@ export const greenHillAct1: LevelDefinition = {
       z: -90,
       width: 2600,
       height: 74,
-      color: 0x0d7ac0,
+      color: 0x0058c8,
     },
     {
       type: 'color-band',
@@ -141,7 +161,7 @@ export const greenHillAct1: LevelDefinition = {
       z: -88,
       width: 2600,
       height: 16,
-      color: 0x67c1e0,
+      color: 0x7fd0f4,
     },
   ],
   terrain,
@@ -182,35 +202,35 @@ export const greenHillAct1: LevelDefinition = {
     { type: 'finish-sign', x: 1970, y: 12 },
   ],
   decorations: [
-    { type: 'runtime-art', art: 'green-hill-backdrop', x: 150, y: 8, z: -84, scale: 1.26 },
-    { type: 'runtime-art', art: 'green-hill-backdrop', x: 750, y: 10, z: -86, scale: 1.34 },
-    { type: 'runtime-art', art: 'green-hill-backdrop', x: 1350, y: 9, z: -85, scale: 1.22 },
-    { type: 'runtime-art', art: 'green-hill-backdrop', x: 1850, y: 10, z: -84, scale: 1.2 },
-    { type: 'model', asset: 'green-hill-loop', x: LOOP_CENTER_X, y: 6.4, z: -10, scale: 1, rotation: { x: Math.PI / 2 } },
-    { type: 'model', asset: 'green-hill-palm-tree', x: 250, y: 0, z: -25, scale: 0.45 },
-    { type: 'model', asset: 'green-hill-palm-tree', x: 620, y: 0, z: -28, scale: 0.5 },
-    { type: 'model', asset: 'green-hill-palm-tree', x: 1120, y: 0, z: -26, scale: 0.42 },
-    { type: 'model', asset: 'green-hill-palm-tree', x: 1620, y: 0, z: -27, scale: 0.48 },
-    { type: 'model', asset: 'green-hill-palm-tree', x: 1930, y: 0, z: -25, scale: 0.4 },
-    { type: 'runtime-art', art: 'green-hill-palm', x: 450, y: 0, z: -48, scale: 0.9 },
-    { type: 'runtime-art', art: 'green-hill-palm', x: 1500, y: 0, z: -50, scale: 0.85 },
-    { type: 'runtime-art', art: 'green-hill-sunflower', x: 60, y: 0, z: -12, scale: 0.84 },
-    { type: 'runtime-art', art: 'green-hill-sunflower', x: 210, y: 0, z: -12, scale: 0.72 },
-    { type: 'runtime-art', art: 'green-hill-sunflower', x: 380, y: 0, z: -12, scale: 0.8 },
-    { type: 'runtime-art', art: 'green-hill-sunflower', x: 590, y: 0, z: -12, scale: 0.75 },
-    { type: 'runtime-art', art: 'green-hill-sunflower', x: 1080, y: 0, z: -12, scale: 0.82 },
-    { type: 'runtime-art', art: 'green-hill-sunflower', x: 1300, y: 0, z: -12, scale: 0.74 },
-    { type: 'runtime-art', art: 'green-hill-sunflower', x: 1460, y: 0, z: -12, scale: 0.8 },
-    { type: 'runtime-art', art: 'green-hill-sunflower', x: 1700, y: 0, z: -12, scale: 0.76 },
-    { type: 'runtime-art', art: 'green-hill-sunflower', x: 1990, y: 0, z: -12, scale: 0.84 },
-    { type: 'runtime-art', art: 'green-hill-rock', x: 170, y: 0, z: -11, scale: 0.92 },
-    { type: 'runtime-art', art: 'green-hill-rock', x: 410, y: 0, z: -11, scale: 0.96 },
-    { type: 'runtime-art', art: 'green-hill-rock', x: 1180, y: 0, z: -11, scale: 0.9 },
-    { type: 'runtime-art', art: 'green-hill-rock', x: 1550, y: 0, z: -11, scale: 0.95 },
-    { type: 'runtime-art', art: 'green-hill-rock', x: 1880, y: 0, z: -11, scale: 0.9 },
-    { type: 'runtime-art', art: 'green-hill-totem', x: 330, y: 0, z: -13, scale: 0.82 },
-    { type: 'runtime-art', art: 'green-hill-totem', x: 1400, y: 0, z: -13, scale: 0.84, rotation: { y: 3.1416 } },
-    { type: 'runtime-art', art: 'green-hill-sign', x: 520, y: 0, z: -13, scale: 0.86 },
-    { type: 'runtime-art', art: 'green-hill-sign', x: 2050, y: 0, z: -13, scale: 0.78, rotation: { y: 3.1416 } },
+    { type: 'model', asset: 'green-hill-background', node: 'ghz-backdrop', x: 150, y: 8, z: -84, scale: 2.2, unlit: true },
+    { type: 'model', asset: 'green-hill-background', node: 'ghz-backdrop', x: 750, y: 10, z: -86, scale: 2.3, unlit: true },
+    { type: 'model', asset: 'green-hill-background', node: 'ghz-backdrop', x: 1350, y: 9, z: -85, scale: 2.2, unlit: true },
+    { type: 'model', asset: 'green-hill-background', node: 'ghz-backdrop', x: 1850, y: 10, z: -84, scale: 2.2, unlit: true },
+    { type: 'model', asset: 'green-hill-loop', x: LOOP_CENTER_X, y: 6.4, z: -8, scale: 1, rotation: { x: Math.PI / 2 }, unlit: true },
+    { type: 'model', asset: 'green-hill-palm-tree', x: 250, y: 0, z: -30, scale: 0.45, unlit: true },
+    { type: 'model', asset: 'green-hill-palm-tree', x: 620, y: 0, z: -33, scale: 0.5, unlit: true },
+    { type: 'model', asset: 'green-hill-palm-tree', x: 1120, y: 0, z: -31, scale: 0.42, unlit: true },
+    { type: 'model', asset: 'green-hill-palm-tree', x: 1620, y: 0, z: -32, scale: 0.48, unlit: true },
+    { type: 'model', asset: 'green-hill-palm-tree', x: 1930, y: 0, z: -30, scale: 0.4, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-palm-tall', x: 450, y: 0, z: -26, scale: 1.5, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-palm-short', x: 1500, y: 0, z: -30, scale: 1.6, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-flower-red', x: 60, y: 0, z: -14, scale: 1.4, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-flower-blue', x: 210, y: 0, z: -14, scale: 1.3, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-flower-red-b', x: 380, y: 0, z: -14, scale: 1.4, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-flower-blue', x: 590, y: 0, z: -14, scale: 1.3, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-flower-red', x: 1080, y: 0, z: -14, scale: 1.4, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-flower-blue', x: 1300, y: 0, z: -14, scale: 1.3, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-flower-red-b', x: 1460, y: 0, z: -14, scale: 1.4, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-flower-blue', x: 1700, y: 0, z: -14, scale: 1.3, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-flower-red', x: 1990, y: 0, z: -14, scale: 1.4, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-rock', x: 170, y: 0, z: -13, scale: 1.15, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-rock', x: 410, y: 0, z: -13, scale: 1.2, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-rock', x: 1180, y: 0, z: -13, scale: 1.1, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-rock', x: 1550, y: 0, z: -13, scale: 1.15, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-rock', x: 1880, y: 0, z: -13, scale: 1.1, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-totem', x: 330, y: 0, z: -15, scale: 1, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-totem', x: 1400, y: 0, z: -15, scale: 1, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-sign', x: 520, y: 0, z: -15, scale: 0.9, unlit: true },
+    { type: 'model', asset: 'green-hill-props', node: 'ghz-sign', x: 2050, y: 0, z: -15, scale: 0.85, unlit: true },
   ],
 };

@@ -65,5 +65,8 @@ It watches your `~/Downloads` folder for model archives (`.zip`, `.glb`, `.fbx`,
   environment set (`green-hill-terrain-set/loop/props/background.glb` plus procedural
   checker textures) via `scripts/generate-green-hill-environment.py`. Requires Blender
   on `PATH` or at `C:\Program Files\Blender Foundation\Blender *\blender.exe` (Windows).
+- `npm run assets:textures:green-hill` — regenerates the Green Hill stage texture
+  PNGs (dirt checker, band, grass) in `assets/textures/green-hill/` via
+  `scripts/generate-green-hill-textures.mjs` (deterministic, no dependencies).
 - `npm run assets:measure -- <path-to-glb> [--scale N] [--json]` — prints the bounding
   box, size and mesh inventory of a GLB, useful for placing models at the right scale.

@@ -17,6 +17,10 @@ export interface CameraDefinition {
   visibleHeight: number;
   followOffsetX: number;
   followOffsetY: number;
+  /** Camera projection; gameplay stays 2D either way. Defaults to `side-scroller`. */
+  mode?: 'side-scroller' | 'perspective';
+  /** Vertical field of view in degrees for `perspective` mode. */
+  fov?: number;
 }
 
 export interface PlayerDefinition extends Vector2Definition {
@@ -91,26 +95,16 @@ export type TerrainDefinition = SolidPlatformDefinition | PathTerrainDefinition;
 export interface ModelDecorationDefinition extends Vector2Definition {
   type: 'model';
   asset: string;
+  /** Picks a single named node from the asset (e.g. one prop out of a props collection GLB). */
+  node?: string;
   scale?: number;
   z?: number;
   rotation?: RotationDefinition;
+  /** Renders the model unlit, keeping its baked texture colors (e.g. flat billboard-style props). */
+  unlit?: boolean;
 }
 
-export interface RuntimeDecorationDefinition extends Vector2Definition {
-  type: 'runtime-art';
-  art:
-    | 'green-hill-backdrop'
-    | 'green-hill-palm'
-    | 'green-hill-sunflower'
-    | 'green-hill-rock'
-    | 'green-hill-totem'
-    | 'green-hill-sign';
-  scale?: number;
-  z?: number;
-  rotation?: RotationDefinition;
-}
-
-export type DecorationDefinition = ModelDecorationDefinition | RuntimeDecorationDefinition;
+export type DecorationDefinition = ModelDecorationDefinition;
 
 export interface BackgroundLayerDefinition extends Vector2Definition {
   type: 'color-band';
@@ -125,6 +119,10 @@ export interface StageThemeDefinition {
   skyColor: number;
   terrainMaterials: Record<string, {
     color: number;
+  }>;
+  /** Theme texture library, loaded before terrain is built and counted in loading progress. */
+  textures?: Record<string, {
+    url: string;
   }>;
   decorations: Record<string, {
     url: string;

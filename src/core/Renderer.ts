@@ -3,6 +3,8 @@ import * as THREE from 'three';
 export interface RendererOptions {
   cameraMode?: 'side-scroller' | 'perspective';
   visibleHeight?: number;
+  /** Vertical field of view in degrees for `perspective` camera mode. */
+  fov?: number;
 }
 
 export class Renderer {
@@ -12,6 +14,7 @@ export class Renderer {
   private container: HTMLElement;
   private cameraMode: 'side-scroller' | 'perspective';
   private visibleHeight: number;
+  private readonly fov: number;
   private readonly onWindowResize = (): void => this.resize();
 
   constructor(containerId: string, options: RendererOptions = {}) {
@@ -22,6 +25,7 @@ export class Renderer {
     this.scene = new THREE.Scene();
     this.cameraMode = options.cameraMode ?? 'side-scroller';
     this.visibleHeight = options.visibleHeight ?? 100;
+    this.fov = options.fov ?? 40;
 
     const width = this.container.clientWidth || window.innerWidth;
     const height = this.container.clientHeight || window.innerHeight;
@@ -37,11 +41,13 @@ export class Renderer {
         0.1,
         1000,
       );
+      this.camera.position.z = 50;
     } else {
-      this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+      this.camera = new THREE.PerspectiveCamera(this.fov, width / height, 0.1, 1000);
+      // distance calibrated so the z=0 gameplay plane keeps the same visible
+      // height as the orthographic view (art and gameplay framing unchanged)
+      this.camera.position.z = (this.visibleHeight / 2) / Math.tan(THREE.MathUtils.degToRad(this.fov / 2));
     }
-
-    this.camera.position.z = 50;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setSize(width, height);
@@ -63,6 +69,7 @@ export class Renderer {
 
     if (this.camera instanceof THREE.PerspectiveCamera) {
       this.camera.aspect = width / height;
+      this.camera.position.z = (this.visibleHeight / 2) / Math.tan(THREE.MathUtils.degToRad(this.fov / 2));
       this.camera.updateProjectionMatrix();
     } else if (this.camera instanceof THREE.OrthographicCamera) {
       const aspect = width / height;

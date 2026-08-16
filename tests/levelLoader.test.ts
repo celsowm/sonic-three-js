@@ -28,7 +28,19 @@ class MockGLTFLoader {
   load(url: string, onLoad: (gltf: { scene: THREE.Group; animations: THREE.AnimationClip[] }) => void): void {
     const scene = new THREE.Group();
     scene.name = url;
+    // named child so decorations can pick individual nodes out of a GLB
+    const prop = new THREE.Group();
+    prop.name = 'ghz-rock';
+    scene.add(prop);
     onLoad({ scene, animations: [] });
+  }
+}
+
+class MockTextureLoader {
+  load(url: string, onLoad: (texture: THREE.Texture) => void): void {
+    const texture = new THREE.Texture();
+    texture.name = url;
+    onLoad(texture);
   }
 }
 
@@ -39,6 +51,9 @@ const testLevel: LevelDefinition = {
     skyColor: 0x123456,
     terrainMaterials: {
       grass: { color: 0x00ff00 },
+    },
+    textures: {
+      'grass-top': { url: 'grass-top.png' },
     },
     decorations: {
       palm: { url: 'palm.glb' },
@@ -64,7 +79,7 @@ const testLevel: LevelDefinition = {
   ],
   decorations: [
     { type: 'model', asset: 'palm', x: 30, y: -5, z: -24, scale: 0.5, rotation: { y: Math.PI } },
-    { type: 'runtime-art', art: 'green-hill-rock', x: 44, y: 0, z: -12, scale: 0.8 },
+    { type: 'model', asset: 'palm', node: 'ghz-rock', x: 44, y: 0, z: -12, scale: 0.8 },
   ],
 };
 
@@ -86,7 +101,11 @@ describe('LevelLoader', () => {
 
   it('builds a level from data instead of hard-coded example setup', async () => {
     const stage = new Stage('game-container');
-    const loader = new LevelLoader(new MockGLTFLoader() as never);
+    const progress: Array<[number, number]> = [];
+    const loader = new LevelLoader(new MockGLTFLoader() as never, {
+      textureLoader: new MockTextureLoader() as never,
+      onProgress: (loaded, total) => progress.push([loaded, total]),
+    });
     const result = await loader.load(stage, testLevel);
 
     expect(result.player).toBeInstanceOf(Player);
@@ -95,12 +114,20 @@ describe('LevelLoader', () => {
     expect(stage.engine.entities.filter(entity => entity instanceof SceneryElement)).toHaveLength(2);
     expect(stage.engine.renderer.scene.children.length).toBeGreaterThan(2);
 
-    const decoration = stage.engine.entities
+    // 2 model decorations + 1 theme texture are counted as loading progress
+    expect(progress[0]).toEqual([0, 3]);
+    expect(progress[progress.length - 1]).toEqual([3, 3]);
+
+    const scenery = stage.engine.entities
       .filter(entity => entity instanceof SceneryElement)
-      .map(entity => entity.mesh as THREE.Group)
-      .find(mesh => mesh.children[0]?.name === 'palm.glb') as THREE.Group;
+      .map(entity => entity.mesh as THREE.Group);
+    const decoration = scenery.find(mesh => mesh.children[0]?.name === 'palm.glb') as THREE.Group;
     const model = decoration.children[0];
     expect(model.rotation.y).toBe(Math.PI);
+
+    // node-picked decoration clones only the named prop subtree
+    const prop = scenery.find(mesh => mesh.children[0]?.name === 'ghz-rock') as THREE.Group;
+    expect(prop.children[0].children).toHaveLength(0);
 
     stage.updateCamera();
     expect(stage.engine.renderer.camera.position.x).toBe(13);
