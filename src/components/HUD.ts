@@ -62,6 +62,13 @@ export class HUD {
     }
   }
 
+  /** Restarts the timer from zero (level restart). */
+  public reset(): void {
+    this.startTime = Date.now();
+    this.pausedAt = null;
+    this.elapsedSeconds = 0;
+  }
+
   public get elapsed(): number {
     return this.elapsedSeconds;
   }

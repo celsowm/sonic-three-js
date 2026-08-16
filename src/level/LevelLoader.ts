@@ -42,14 +42,25 @@ interface LoadedModel {
   animations: THREE.AnimationClip[];
 }
 
+const isGltfLoader = (value: unknown): value is GLTFLoader =>
+  typeof value === 'object' && value !== null && 'load' in value;
+
 export class LevelLoader {
   private readonly gltfLoader: GLTFLoader;
   private readonly options: LevelLoaderOptions;
   private readonly modelCache = new Map<string, Promise<LoadedModel>>();
 
-  constructor(gltfLoader = new GLTFLoader(), options: LevelLoaderOptions = {}) {
-    this.gltfLoader = gltfLoader;
-    this.options = options;
+  constructor(
+    optionsOrLoader: LevelLoaderOptions | GLTFLoader = {},
+    maybeOptions: LevelLoaderOptions = {},
+  ) {
+    if (isGltfLoader(optionsOrLoader)) {
+      this.gltfLoader = optionsOrLoader;
+      this.options = maybeOptions;
+    } else {
+      this.gltfLoader = new GLTFLoader();
+      this.options = optionsOrLoader;
+    }
   }
 
   public async load(stage: Stage, level: LevelDefinition): Promise<LevelLoadResult> {

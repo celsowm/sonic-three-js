@@ -22,3 +22,6 @@ export * from './levels/greenHillAct1';
 export * from './levels/physicsPlayground';
 
 export * from './components/HUD';
+export * from './components/LoadingScreen';
+export * from './components/ResultsOverlay';
+export * from './components/DebugOverlay';
