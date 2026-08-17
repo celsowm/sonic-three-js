@@ -3,81 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>sonic-three-js — demos</title>
+  <title>sonic-three-js — Demos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(180deg, #8ed8f7 0%, #c9ecfa 60%, #2ea334 60%, #1d7a24 100%);
-      font-family: sans-serif;
+      background: radial-gradient(circle at 50% 30%, #2b6eaf 0%, #0c2138 70%, #050e18 100%);
+      font-family: 'Outfit', sans-serif;
+      color: #fff;
     }
     .menu {
-      background: rgba(11, 28, 44, 0.88);
-      border: 4px solid #ffd23f;
-      border-radius: 10px;
-      padding: 36px 48px;
-      color: #fff;
+      background: rgba(12, 28, 46, 0.88);
+      backdrop-filter: blur(12px);
+      border: 4px solid #ffe600;
+      border-radius: 18px;
+      padding: 44px 56px;
       text-align: center;
-      box-shadow: 0 14px 50px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(255, 230, 0, 0.1);
+      max-width: 540px;
+      width: 90%;
     }
     h1 {
-      margin: 0 0 4px;
-      color: #ffd23f;
-      letter-spacing: 4px;
-      font-size: 30px;
+      margin: 0 0 6px;
+      font-family: 'Press Start 2P', monospace, sans-serif;
+      color: #ffe600;
+      font-size: 24px;
+      letter-spacing: 2px;
+      text-shadow: 3px 3px 0 #000, 0 0 15px rgba(255, 230, 0, 0.5);
     }
     p.subtitle {
-      margin: 0 0 26px;
+      margin: 0 0 32px;
       color: #9fc3e8;
-      font-size: 14px;
+      font-size: 15px;
+      font-weight: 500;
     }
     a.demo-link {
       display: block;
-      margin: 12px 0;
-      padding: 16px 22px;
-      background: #17456b;
-      border: 2px solid #2f7fb8;
-      border-radius: 8px;
+      margin: 16px 0;
+      padding: 20px 24px;
+      background: linear-gradient(135deg, #184c78 0%, #103454 100%);
+      border: 2px solid #358ccc;
+      border-radius: 12px;
       color: #fff;
       text-decoration: none;
-      font-size: 19px;
-      font-weight: bold;
-      transition: background 0.15s;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
     }
-    a.demo-link:hover { background: #21598c; }
+    a.demo-link:hover {
+      transform: translateY(-2px);
+      border-color: #ffe600;
+      box-shadow: 0 10px 25px rgba(255, 230, 0, 0.3);
+    }
     a.demo-link small {
       display: block;
-      font-weight: normal;
+      font-weight: 500;
       font-size: 13px;
-      color: #9fc3e8;
-      margin-top: 4px;
+      color: #aed5f8;
+      margin-top: 6px;
+      letter-spacing: 0;
     }
     .controls {
-      margin-top: 24px;
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
       font-size: 13px;
       color: #9fc3e8;
-      line-height: 1.7;
+      line-height: 1.8;
+    }
+    .key-tag {
+      background: #1c3e60;
+      border: 1px solid #3b74a6;
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: #ffe600;
+      font-size: 11px;
+      font-weight: 700;
     }
   </style>
 </head>
 <body>
   <div class="menu">
-    <h1>SONIC-THREE-JS</h1>
-    <p class="subtitle">a 2.5D classic Sonic engine for Three.js</p>
+    <h1>SONIC THREE.JS</h1>
+    <p class="subtitle">2.5D Classic Sonic Engine for Three.js</p>
     <a class="demo-link" href="./green-hill.html">
       GREEN HILL — ACT 1
-      <small>hills, ramp jumps, a loop-de-loop, springs, badniks and monitors</small>
+      <small>Real-3D terrain, spring ramps, loop-de-loop, badniks & monitors</small>
     </a>
     <a class="demo-link" href="./physics-sandbox.html">
       PHYSICS SANDBOX
-      <small>slope ladder, half-pipe, big loop and springs — debug overlay on</small>
+      <small>Slope ladder, half-pipe, big loop & springs (debug mode)</small>
     </a>
     <div class="controls">
-      Arrows move &nbsp;·&nbsp; Space jump &nbsp;·&nbsp; Down roll<br>
-      P / Esc pause &nbsp;·&nbsp; R restart &nbsp;·&nbsp; F3 debug overlay
+      <span class="key-tag">Arrows</span> Move &nbsp;·&nbsp; <span class="key-tag">Space</span> Jump &nbsp;·&nbsp; <span class="key-tag">Down</span> Roll<br>
+      <span class="key-tag">P</span> Pause &nbsp;·&nbsp; <span class="key-tag">R</span> Restart &nbsp;·&nbsp; <span class="key-tag">F3</span> Debug
     </div>
   </div>
 </body>

@@ -45,8 +45,15 @@ const worldTexture = (texture: THREE.Texture, worldWidth: number, worldHeight: n
   return texture;
 };
 
-const textured = (map: THREE.Texture, color = 0xffffff): THREE.MeshBasicMaterial =>
-  new THREE.MeshBasicMaterial({ map, color, vertexColors: true, side: THREE.DoubleSide });
+const textured = (map: THREE.Texture, color = 0xffffff): THREE.MeshStandardMaterial =>
+  new THREE.MeshStandardMaterial({
+    map,
+    color,
+    vertexColors: true,
+    side: THREE.DoubleSide,
+    roughness: 0.75,
+    metalness: 0.05,
+  });
 
 interface Quad {
   a: THREE.Vector3;
@@ -300,7 +307,7 @@ const buildExtrudedPath = (
   const band = new THREE.Mesh(bandBuilder.build(), textured(textures.dirtBand));
   const dirt = new THREE.Mesh(dirtBuilder.build(), textured(textures.dirtChecker));
   const caps = new THREE.Mesh(capBuilder.build(), textured(textures.dirtChecker));
-  const bottom = new THREE.Mesh(bottomBuilder.build(), new THREE.MeshBasicMaterial({ color: 0x3a1a05, side: THREE.DoubleSide }));
+  const bottom = new THREE.Mesh(bottomBuilder.build(), new THREE.MeshStandardMaterial({ color: 0x3a1a05, side: THREE.DoubleSide, roughness: 0.9 }));
   const grass = new THREE.Mesh(grassBuilder.build(), textured(textures.grassTop));
   group.add(rim, band, dirt, caps, bottom, grass);
 

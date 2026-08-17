@@ -47,13 +47,14 @@ export async function runDemo(level: LevelDefinition, options: DemoOptions = {})
   pauseOverlay.style.display = 'none';
   pauseOverlay.style.alignItems = 'center';
   pauseOverlay.style.justifyContent = 'center';
-  pauseOverlay.style.background = 'rgba(0, 0, 0, 0.45)';
+  pauseOverlay.style.background = 'rgba(5, 12, 22, 0.65)';
+  pauseOverlay.style.backdropFilter = 'blur(6px)';
   pauseOverlay.style.zIndex = '20';
-  pauseOverlay.style.fontFamily = 'sans-serif';
-  pauseOverlay.style.color = '#ffffff';
-  pauseOverlay.style.fontSize = '34px';
-  pauseOverlay.style.letterSpacing = '8px';
-  pauseOverlay.style.textShadow = '3px 3px 0 #000';
+  pauseOverlay.style.fontFamily = "'Press Start 2P', monospace, sans-serif";
+  pauseOverlay.style.color = '#ffe600';
+  pauseOverlay.style.fontSize = '32px';
+  pauseOverlay.style.letterSpacing = '4px';
+  pauseOverlay.style.textShadow = '4px 4px 0 #000, 0 0 20px rgba(255, 230, 0, 0.6)';
   pauseOverlay.innerText = 'PAUSED';
   container.appendChild(pauseOverlay);
 

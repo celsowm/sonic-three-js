@@ -53,12 +53,24 @@ export class Renderer {
     this.renderer.setSize(width, height);
     this.container.appendChild(this.renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    this.scene.add(ambientLight);
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(10, 20, 10);
+    // Atmospheric linear fog
+    this.scene.fog = new THREE.Fog(0x8ed8f7, 300, 1800);
+
+    // Hemisphere light for vibrant sky-to-ground ambient fill
+    const hemiLight = new THREE.HemisphereLight(0xe8f7ff, 0x3d661e, 0.75);
+    this.scene.add(hemiLight);
+
+    // Warm directional sun light
+    const dirLight = new THREE.DirectionalLight(0xfffaed, 1.15);
+    dirLight.position.set(50, 120, 80);
     this.scene.add(dirLight);
+
+    // Subtle rim light from opposite side
+    const rimLight = new THREE.DirectionalLight(0x70b0ff, 0.35);
+    rimLight.position.set(-40, -20, -50);
+    this.scene.add(rimLight);
 
     window.addEventListener('resize', this.onWindowResize);
   }

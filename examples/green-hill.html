@@ -4,31 +4,74 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Green Hill Act 1 — sonic-three-js</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
       overflow: hidden;
-      background-color: #0098F0; /* Sky blue */
+      background: linear-gradient(180deg, #3aa8f7 0%, #7fd3f8 40%, #8ed8f7 100%);
+      font-family: 'Outfit', sans-serif;
     }
     #game-container {
       width: 100vw;
       height: 100vh;
       display: block;
     }
-    #info {
+    #info-bar {
       position: absolute;
-      bottom: 10px;
-      left: 10px;
-      color: white;
-      font-family: sans-serif;
-      text-shadow: 1px 1px 0 #000;
-      pointer-events: none;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 24, 40, 0.82);
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(255, 230, 0, 0.6);
+      border-radius: 30px;
+      padding: 8px 24px;
+      color: #ffffff;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      pointer-events: auto;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      white-space: nowrap;
+    }
+    #info-bar span.key-pill {
+      background: #1e456b;
+      border: 1px solid #3d7cb8;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffe600;
+      text-transform: uppercase;
+    }
+    #info-bar a {
+      color: #ffe600;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    #info-bar a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
   <div id="game-container"></div>
-  <div id="info">Arrows to move, Space to jump, Down to roll — P pause, R restart, F3 debug · <a style="color:inherit" href="./index.html">demos</a></div>
+  <div id="info-bar">
+    <div><span class="key-pill">Arrows</span> Move &nbsp;<span class="key-pill">Space</span> Jump &nbsp;<span class="key-pill">Down</span> Roll</div>
+    <div style="opacity:0.4">|</div>
+    <div><span class="key-pill">P</span> Pause &nbsp;<span class="key-pill">R</span> Restart &nbsp;<span class="key-pill">F3</span> Debug</div>
+    <div style="opacity:0.4">|</div>
+    <a href="./index.html">Demos Menu</a>
+  </div>
   <script type="module" src="./green-hill.ts"></script>
 </body>
 </html>
