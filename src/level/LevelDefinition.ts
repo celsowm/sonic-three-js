@@ -1,3 +1,5 @@
+import type { RendererVisualOptions, SceneEnvironmentOptions } from '../core/Renderer';
+
 export interface Vector2Definition {
   x: number;
   y: number;
@@ -100,13 +102,36 @@ export interface ModelDecorationDefinition extends Vector2Definition {
   scale?: number;
   z?: number;
   rotation?: RotationDefinition;
-  /** Renders the model unlit, keeping its baked texture colors (e.g. flat billboard-style props). */
+  /** Renders the model unlit, keeping its baked texture colors. */
   unlit?: boolean;
+  castShadow?: boolean;
+  receiveShadow?: boolean;
 }
 
-export type DecorationDefinition = ModelDecorationDefinition;
+export interface ModelScatterInstanceDefinition extends Vector2Definition {
+  z?: number;
+  scale?: number;
+  rotation?: RotationDefinition;
+}
 
-export interface BackgroundLayerDefinition extends Vector2Definition {
+/**
+ * Places many copies of the same model/node while paying the asset-loading cost
+ * once. This is intentionally data-driven so levels can become visually dense
+ * without adding dozens of top-level decoration definitions.
+ */
+export interface ModelScatterDecorationDefinition {
+  type: 'model-scatter';
+  asset: string;
+  node?: string;
+  instances: ModelScatterInstanceDefinition[];
+  unlit?: boolean;
+  castShadow?: boolean;
+  receiveShadow?: boolean;
+}
+
+export type DecorationDefinition = ModelDecorationDefinition | ModelScatterDecorationDefinition;
+
+export interface ColorBandBackgroundDefinition extends Vector2Definition {
   type: 'color-band';
   width: number;
   height: number;
@@ -114,9 +139,52 @@ export interface BackgroundLayerDefinition extends Vector2Definition {
   z: number;
 }
 
+export interface GradientBandBackgroundDefinition extends Vector2Definition {
+  type: 'gradient-band';
+  width: number;
+  height: number;
+  topColor: number;
+  bottomColor: number;
+  z: number;
+}
+
+/** Procedural distant silhouette used for parallax cliffs/islands. */
+export interface RidgeBandBackgroundDefinition extends Vector2Definition {
+  type: 'ridge-band';
+  width: number;
+  height: number;
+  color: number;
+  z: number;
+  segments?: number;
+  seed?: number;
+  /** 0 = smooth rolling ridge, 1 = very jagged. */
+  roughness?: number;
+}
+
+/** Cheap instanced cloud puffs; `x/y` are the center of the placement field. */
+export interface CloudFieldBackgroundDefinition extends Vector2Definition {
+  type: 'cloud-field';
+  width: number;
+  height: number;
+  z: number;
+  count: number;
+  color?: number;
+  seed?: number;
+  minScale?: number;
+  maxScale?: number;
+}
+
+export type BackgroundLayerDefinition =
+  | ColorBandBackgroundDefinition
+  | GradientBandBackgroundDefinition
+  | RidgeBandBackgroundDefinition
+  | CloudFieldBackgroundDefinition;
+
 export interface StageThemeDefinition {
   id: string;
   skyColor: number;
+  /** Per-theme lighting/fog. Rendering quality stays a level/runtime choice. */
+  environment?: SceneEnvironmentOptions;
   terrainMaterials: Record<string, {
     color: number;
   }>;
@@ -139,6 +207,8 @@ export interface LevelDefinition {
   id: string;
   theme: StageThemeDefinition;
   camera: CameraDefinition;
+  /** Optional visual-quality request consumed by demo/host bootstrap code. */
+  rendering?: RendererVisualOptions;
   player: PlayerDefinition;
   /** Y below which the player dies; defaults to a value far below the terrain. */
   deathY?: number;

@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../src';
+import type { LevelDefinition, RenderQualityPreset } from '../src';
 import {
   Stage,
   HUD,
@@ -13,11 +13,20 @@ export interface DemoOptions {
   debug?: boolean;
   /** Title shown on the stage-clear screen. */
   actName?: string;
+  /** Optional runtime override for the level's rendering quality. */
+  quality?: RenderQualityPreset;
 }
 
 /** Reads demo flags from the page URL, e.g. `green-hill.html?debug=1`. */
 const wantsDebugFromUrl = (): boolean =>
   new URLSearchParams(window.location.search).has('debug');
+
+const qualityFromUrl = (): RenderQualityPreset | undefined => {
+  const value = new URLSearchParams(window.location.search).get('quality');
+  return value === 'classic' || value === 'balanced' || value === 'cinematic'
+    ? value
+    : undefined;
+};
 
 /**
  * Shared demo bootstrap: loading screen, HUD, pause/restart keys, results
@@ -32,6 +41,8 @@ export async function runDemo(level: LevelDefinition, options: DemoOptions = {})
   const stage = new Stage(containerId, {
     engine: {
       renderer: {
+        ...(level.rendering ?? {}),
+        quality: options.quality ?? qualityFromUrl() ?? level.rendering?.quality,
         cameraMode: level.camera.mode,
         fov: level.camera.fov,
       },

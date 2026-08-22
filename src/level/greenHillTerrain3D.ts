@@ -2,12 +2,9 @@ import * as THREE from 'three';
 import type { TerrainDefinition } from './LevelDefinition';
 
 /**
- * Real-3D Green Hill terrain: every walkable path becomes an extruded slab
- * with a textured dirt face, a dark checker band, a grass rim and — the part
- * that sells the depth — a grass top surface extending away from the camera.
- * UVs are expressed in world units so the shared textures tile continuously
- * across every segment, and the classic checker square stays at 8 Genesis
- * pixels (see GREEN_HILL_PIXEL).
+ * Real-3D Green Hill terrain. Collision remains a 2D polyline, while the
+ * renderer turns the same path into a deep PBR slab with tiled dirt, grass,
+ * self-shadowing surfaces and a dense instanced grass canopy.
  */
 
 /** World units per Genesis pixel: the 224px-tall viewport maps to visibleHeight 96. */
@@ -21,6 +18,8 @@ export const GREEN_HILL_TERRAIN_FRONT_Z = -6;
 const CHECKER_WORLD_SIZE = 64 * GREEN_HILL_PIXEL;
 const RIM_HEIGHT = 5;
 const BAND_HEIGHT = 2 * 8 * GREEN_HILL_PIXEL;
+const GRASS_ROWS = 5;
+const GRASS_SPACING = 2.35;
 
 export interface GreenHillTerrainTextures {
   dirtChecker: THREE.Texture;
@@ -45,15 +44,56 @@ const worldTexture = (texture: THREE.Texture, worldWidth: number, worldHeight: n
   return texture;
 };
 
-const textured = (map: THREE.Texture, color = 0xffffff): THREE.MeshStandardMaterial =>
-  new THREE.MeshStandardMaterial({
+const pseudoRandom = (seed: number, index: number): number => {
+  const value = Math.sin(seed * 71.193 + index * 12.9898) * 43758.5453123;
+  return value - Math.floor(value);
+};
+
+/** Small deterministic grayscale detail map used as micro-bump on PBR terrain. */
+const createDetailTexture = (seed: number, worldSize: number): THREE.DataTexture => {
+  const size = 64;
+  const data = new Uint8Array(size * size * 4);
+  for (let index = 0; index < size * size; index += 1) {
+    const coarse = pseudoRandom(seed, index);
+    const fine = pseudoRandom(seed + 13, index * 7 + 3);
+    const value = Math.round(75 + (coarse * 0.72 + fine * 0.28) * 150);
+    const offset = index * 4;
+    data[offset] = value;
+    data[offset + 1] = value;
+    data[offset + 2] = value;
+    data[offset + 3] = 255;
+  }
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1 / worldSize, 1 / worldSize);
+  texture.needsUpdate = true;
+  return texture;
+};
+
+const dirtDetail = createDetailTexture(17, 4.5);
+const grassDetail = createDetailTexture(41, 2.4);
+
+interface MaterialOptions {
+  surface?: 'dirt' | 'grass' | 'band';
+  color?: number;
+}
+
+const textured = (map: THREE.Texture, options: MaterialOptions = {}): THREE.MeshStandardMaterial => {
+  const surface = options.surface ?? 'dirt';
+  const grass = surface === 'grass';
+  const band = surface === 'band';
+  return new THREE.MeshStandardMaterial({
     map,
-    color,
+    color: options.color ?? 0xffffff,
     vertexColors: true,
     side: THREE.DoubleSide,
-    roughness: 0.75,
-    metalness: 0.05,
+    roughness: grass ? 0.93 : band ? 0.82 : 0.88,
+    metalness: 0,
+    bumpMap: grass ? grassDetail : dirtDetail,
+    bumpScale: grass ? 0.42 : band ? 0.38 : 0.72,
   });
+};
 
 interface Quad {
   a: THREE.Vector3;
@@ -65,16 +105,14 @@ interface Quad {
   uvB: THREE.Vector2;
   uvC: THREE.Vector2;
   uvD: THREE.Vector2;
-  /** Baked shading per vertex (1 = full brightness); sells depth without scene lights. */
+  /** Artistic base shading; real scene lights add the dynamic component. */
   shadeA?: number;
   shadeB?: number;
   shadeC?: number;
   shadeD?: number;
 }
 
-/**
- * Accumulates textured quads into a single indexed BufferGeometry.
- */
+/** Accumulates textured quads into a single indexed BufferGeometry. */
 class QuadBuilder {
   private positions: number[] = [];
   private normals: number[] = [];
@@ -94,7 +132,6 @@ class QuadBuilder {
     for (const shade of [quad.shadeA ?? 1, quad.shadeB ?? 1, quad.shadeC ?? 1, quad.shadeD ?? 1]) {
       this.colors.push(shade, shade, shade);
     }
-    // a-b-c-d quad: triangles a,b,c and a,c,d (counter-clockwise from front)
     this.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
   }
 
@@ -105,16 +142,11 @@ class QuadBuilder {
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(this.uvs, 2));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(this.colors, 3));
     geometry.setIndex(this.indices);
+    geometry.computeBoundingSphere();
     return geometry;
   }
 }
 
-/**
- * One terrain slice segment. The cross-section hangs along the surface
- * normal (like the original game's terrain slices), and UVs are anchored to
- * arclength/depth-below-surface so the checker follows the hill instead of
- * shearing diagonally on slopes.
- */
 interface Slice {
   start: THREE.Vector2;
   end: THREE.Vector2;
@@ -137,6 +169,7 @@ const buildSlices = (points: THREE.Vector2[]): Slice[] => {
     const start = points[index];
     const end = points[index + 1];
     const length = start.distanceTo(end);
+    if (length <= 0.0001) continue;
     slices.push({ start, end, normal: sliceNormal(start, end), startLength, length });
     startLength += length;
   }
@@ -160,7 +193,6 @@ const surfaceQuad = (slice: Slice, frontZ: number, backZ: number): Quad => {
     uvB: new THREE.Vector2(u1, frontZ),
     uvC: new THREE.Vector2(u1, backZ),
     uvD: new THREE.Vector2(u0, backZ),
-    // the top surface darkens as it recedes, faking light falloff into depth
     shadeA: 1,
     shadeB: 1,
     shadeC: 0.72,
@@ -231,45 +263,105 @@ const bottomQuad = (slice: Slice, thickness: number, frontZ: number, backZ: numb
   };
 };
 
-/** One instanced cone mesh for all grass blades along the rim. */
+const createBladeGeometry = (): THREE.BufferGeometry => {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+    -0.5, 0, 0,
+    0.5, 0, 0,
+    0, 1, 0,
+  ], 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute([
+    0, 0, 1,
+    0, 0, 1,
+    0, 0, 1,
+  ], 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute([
+    0, 0,
+    1, 0,
+    0.5, 1,
+  ], 2));
+  geometry.setIndex([0, 1, 2]);
+  geometry.computeBoundingSphere();
+  return geometry;
+};
+
+/**
+ * Dense instanced grass. Thousands of blades remain one draw call per terrain
+ * section, which is the key trick that lets the 2.5D demo look lush in WebGL.
+ */
 const buildBlades = (points: THREE.Vector2[], frontZ: number): THREE.InstancedMesh | null => {
-  const matrices: THREE.Matrix4[] = [];
-  const spacing = 7;
-  let carried = spacing / 2;
-
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const start = points[index];
-    const end = points[index + 1];
-    const length = start.distanceTo(end);
-    const angle = Math.atan2(end.y - start.y, end.x - start.x);
-    let travelled = carried;
-    while (travelled < length) {
-      const t = travelled / length;
-      const x = start.x + (end.x - start.x) * t;
-      const y = start.y + (end.y - start.y) * t;
-      const wobble = Math.sin(x * 12.9898) * 43758.5453;
-      const random = wobble - Math.floor(wobble);
-      const depth = frontZ + 1.2 + random * 2.4;
-      const matrix = new THREE.Matrix4()
-        .makeRotationZ((random - 0.5) * 0.5)
-        .setPosition(x, y + 1.4 + random * 0.8, depth);
-      matrices.push(matrix);
-      travelled += spacing;
-    }
-    carried = travelled - length;
-  }
-
-  if (matrices.length === 0) {
-    return null;
-  }
-
-  const mesh = new THREE.InstancedMesh(
-    new THREE.ConeGeometry(0.55, 3.2, 5),
-    new THREE.MeshBasicMaterial({ color: 0x0e7a14 }),
-    matrices.length,
+  const slices = buildSlices(points);
+  const estimated = Math.max(
+    1,
+    slices.reduce((sum, slice) => sum + Math.max(1, Math.ceil(slice.length / GRASS_SPACING)) * GRASS_ROWS, 0),
   );
-  matrices.forEach((matrix, index) => mesh.setMatrixAt(index, matrix));
+  if (estimated <= 1) return null;
+
+  const geometry = createBladeGeometry();
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    vertexColors: true,
+    side: THREE.DoubleSide,
+    roughness: 0.96,
+    metalness: 0,
+  });
+  const mesh = new THREE.InstancedMesh(geometry, material, estimated);
+  const matrix = new THREE.Matrix4();
+  const quaternion = new THREE.Quaternion();
+  const position = new THREE.Vector3();
+  const scale = new THREE.Vector3();
+  const color = new THREE.Color();
+  const axis = new THREE.Vector3(0, 0, 1);
+
+  let instance = 0;
+  let globalSample = 0;
+  for (const slice of slices) {
+    const surfaceAngle = Math.atan2(slice.end.y - slice.start.y, slice.end.x - slice.start.x);
+    const samples = Math.max(1, Math.ceil(slice.length / GRASS_SPACING));
+    for (let sample = 0; sample < samples; sample += 1) {
+      const baseT = (sample + 0.5) / samples;
+      for (let row = 0; row < GRASS_ROWS; row += 1) {
+        if (instance >= estimated) break;
+        const seedIndex = globalSample * 17 + row * 31;
+        const jitter = (pseudoRandom(103, seedIndex) - 0.5) / samples;
+        const t = THREE.MathUtils.clamp(baseT + jitter, 0, 1);
+        const randomA = pseudoRandom(211, seedIndex + 1);
+        const randomB = pseudoRandom(307, seedIndex + 2);
+        const randomC = pseudoRandom(419, seedIndex + 3);
+        const x = THREE.MathUtils.lerp(slice.start.x, slice.end.x, t);
+        const y = THREE.MathUtils.lerp(slice.start.y, slice.end.y, t);
+        const depth = row === 0
+          ? frontZ + 0.25 + randomA * 0.55
+          : frontZ - row * 5.2 - randomA * 3.6;
+
+        position.set(x, y + 0.08, depth);
+        quaternion.setFromAxisAngle(axis, surfaceAngle + (randomB - 0.5) * 0.42);
+        scale.set(
+          0.7 + randomA * 0.85,
+          2.5 + randomC * 3.7 - row * 0.16,
+          1,
+        );
+        matrix.compose(position, quaternion, scale);
+        mesh.setMatrixAt(instance, matrix);
+
+        color.setHSL(
+          0.285 + randomB * 0.045,
+          0.72 + randomA * 0.18,
+          0.22 + randomC * 0.13 - row * 0.008,
+        );
+        mesh.setColorAt(instance, color);
+        instance += 1;
+      }
+      globalSample += 1;
+    }
+  }
+
+  mesh.count = instance;
   mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.frustumCulled = false;
   return mesh;
 };
 
@@ -282,6 +374,7 @@ const buildExtrudedPath = (
   const frontZ = GREEN_HILL_TERRAIN_FRONT_Z;
   const backZ = frontZ - GREEN_HILL_TERRAIN_DEPTH;
   const slices = buildSlices(points);
+  if (slices.length === 0) return group;
 
   const rimBuilder = new QuadBuilder();
   const bandBuilder = new QuadBuilder();
@@ -303,18 +396,25 @@ const buildExtrudedPath = (
   capBuilder.add(capQuad(first.start, first.normal, thickness, frontZ, backZ, -1));
   capBuilder.add(capQuad(last.end, last.normal, thickness, frontZ, backZ, 1));
 
-  const rim = new THREE.Mesh(rimBuilder.build(), textured(textures.grassFront));
-  const band = new THREE.Mesh(bandBuilder.build(), textured(textures.dirtBand));
-  const dirt = new THREE.Mesh(dirtBuilder.build(), textured(textures.dirtChecker));
-  const caps = new THREE.Mesh(capBuilder.build(), textured(textures.dirtChecker));
-  const bottom = new THREE.Mesh(bottomBuilder.build(), new THREE.MeshStandardMaterial({ color: 0x3a1a05, side: THREE.DoubleSide, roughness: 0.9 }));
-  const grass = new THREE.Mesh(grassBuilder.build(), textured(textures.grassTop));
+  const rim = new THREE.Mesh(rimBuilder.build(), textured(textures.grassFront, { surface: 'grass' }));
+  const band = new THREE.Mesh(bandBuilder.build(), textured(textures.dirtBand, { surface: 'band' }));
+  const dirt = new THREE.Mesh(dirtBuilder.build(), textured(textures.dirtChecker, { surface: 'dirt' }));
+  const caps = new THREE.Mesh(capBuilder.build(), textured(textures.dirtChecker, { surface: 'dirt' }));
+  const bottom = new THREE.Mesh(
+    bottomBuilder.build(),
+    new THREE.MeshStandardMaterial({ color: 0x321506, side: THREE.DoubleSide, roughness: 0.96, metalness: 0 }),
+  );
+  const grass = new THREE.Mesh(grassBuilder.build(), textured(textures.grassTop, { surface: 'grass' }));
   group.add(rim, band, dirt, caps, bottom, grass);
 
   const blades = buildBlades(points, frontZ);
-  if (blades) {
-    group.add(blades);
-  }
+  if (blades) group.add(blades);
+
+  group.traverse(node => {
+    if (!(node instanceof THREE.Mesh)) return;
+    node.castShadow = true;
+    node.receiveShadow = true;
+  });
 
   return group;
 };
@@ -341,18 +441,24 @@ const buildExtrudedRing = (
   ring.holes.push(new THREE.Path(points));
   const geometry = new THREE.ExtrudeGeometry(ring, {
     depth: GREEN_HILL_TERRAIN_DEPTH,
-    bevelEnabled: false,
+    bevelEnabled: true,
+    bevelSegments: 2,
+    bevelSize: 0.55,
+    bevelThickness: 0.55,
   });
   geometry.translate(0, 0, frontZ);
 
-  group.add(new THREE.Mesh(geometry, textured(textures.dirtChecker)));
+  const mesh = new THREE.Mesh(geometry, textured(textures.dirtChecker, { surface: 'dirt' }));
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
   return group;
 };
 
 /**
- * Builds the real-3D terrain visual for a green-hill terrain definition.
+ * Builds the real-3D Green Hill terrain visual for a terrain definition.
  * Solid platforms are rendered as two-point paths so they get the same
- * textured faces, caps and underside.
+ * textured faces, caps, underside and vegetation system.
  */
 export const createGreenHill3DTerrain = (
   definition: TerrainDefinition,
