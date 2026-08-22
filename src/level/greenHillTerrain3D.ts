@@ -18,8 +18,8 @@ export const GREEN_HILL_TERRAIN_FRONT_Z = -6;
 const CHECKER_WORLD_SIZE = 64 * GREEN_HILL_PIXEL;
 const RIM_HEIGHT = 5;
 const BAND_HEIGHT = 2 * 8 * GREEN_HILL_PIXEL;
-const GRASS_ROWS = 5;
-const GRASS_SPACING = 2.35;
+const GRASS_ROWS = 3;
+const GRASS_SPACING = 1.6;
 
 export interface GreenHillTerrainTextures {
   dirtChecker: THREE.Texture;
@@ -91,7 +91,7 @@ const textured = (map: THREE.Texture, options: MaterialOptions = {}): THREE.Mesh
     roughness: grass ? 0.93 : band ? 0.82 : 0.88,
     metalness: 0,
     bumpMap: grass ? grassDetail : dirtDetail,
-    bumpScale: grass ? 0.42 : band ? 0.38 : 0.72,
+    bumpScale: grass ? 0.2 : band ? 0.34 : 0.62,
   });
 };
 
@@ -195,8 +195,8 @@ const surfaceQuad = (slice: Slice, frontZ: number, backZ: number): Quad => {
     uvD: new THREE.Vector2(u0, backZ),
     shadeA: 1,
     shadeB: 1,
-    shadeC: 0.72,
-    shadeD: 0.72,
+    shadeC: 0.78,
+    shadeD: 0.78,
   };
 };
 
@@ -263,31 +263,50 @@ const bottomQuad = (slice: Slice, thickness: number, frontZ: number, backZ: numb
   };
 };
 
+/** Three short blades make one soft clump instead of one tall triangular spike. */
 const createBladeGeometry = (): THREE.BufferGeometry => {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute([
-    -0.5, 0, 0,
-    0.5, 0, 0,
-    0, 1, 0,
+    -0.9, 0, 0,
+    -0.2, 0, 0,
+    -0.55, 0.95, 0,
+
+    -0.35, 0, 0,
+    0.35, 0, 0,
+    0, 1.25, 0,
+
+    0.2, 0, 0,
+    0.9, 0, 0,
+    0.55, 0.9, 0,
   ], 3));
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute([
     0, 0, 1,
     0, 0, 1,
     0, 0, 1,
+    0, 0, 1,
+    0, 0, 1,
+    0, 0, 1,
+    0, 0, 1,
+    0, 0, 1,
+    0, 0, 1,
   ], 3));
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute([
-    0, 0,
-    1, 0,
-    0.5, 1,
+    0, 0, 1, 0, 0.5, 1,
+    0, 0, 1, 0, 0.5, 1,
+    0, 0, 1, 0, 0.5, 1,
   ], 2));
-  geometry.setIndex([0, 1, 2]);
+  geometry.setIndex([
+    0, 1, 2,
+    3, 4, 5,
+    6, 7, 8,
+  ]);
   geometry.computeBoundingSphere();
   return geometry;
 };
 
 /**
- * Dense instanced grass. Thousands of blades remain one draw call per terrain
- * section, which is the key trick that lets the 2.5D demo look lush in WebGL.
+ * Dense instanced grass. Each instance is a small clump rather than a spike,
+ * keeping Green Hill lush while avoiding the black picket-fence silhouette.
  */
 const buildBlades = (points: THREE.Vector2[], frontZ: number): THREE.InstancedMesh | null => {
   const slices = buildSlices(points);
@@ -302,8 +321,10 @@ const buildBlades = (points: THREE.Vector2[], frontZ: number): THREE.InstancedMe
     color: 0xffffff,
     vertexColors: true,
     side: THREE.DoubleSide,
-    roughness: 0.96,
+    roughness: 0.98,
     metalness: 0,
+    emissive: 0x153a0d,
+    emissiveIntensity: 0.12,
   });
   const mesh = new THREE.InstancedMesh(geometry, material, estimated);
   const matrix = new THREE.Matrix4();
@@ -331,23 +352,23 @@ const buildBlades = (points: THREE.Vector2[], frontZ: number): THREE.InstancedMe
         const x = THREE.MathUtils.lerp(slice.start.x, slice.end.x, t);
         const y = THREE.MathUtils.lerp(slice.start.y, slice.end.y, t);
         const depth = row === 0
-          ? frontZ + 0.25 + randomA * 0.55
-          : frontZ - row * 5.2 - randomA * 3.6;
+          ? frontZ + 0.18 + randomA * 0.35
+          : frontZ - row * 3.0 - randomA * 1.5;
 
-        position.set(x, y + 0.08, depth);
-        quaternion.setFromAxisAngle(axis, surfaceAngle + (randomB - 0.5) * 0.42);
+        position.set(x, y + 0.05, depth);
+        quaternion.setFromAxisAngle(axis, surfaceAngle + (randomB - 0.5) * 0.22);
         scale.set(
-          0.7 + randomA * 0.85,
-          2.5 + randomC * 3.7 - row * 0.16,
+          0.95 + randomA * 0.85,
+          1.15 + randomC * 1.45 - row * 0.08,
           1,
         );
         matrix.compose(position, quaternion, scale);
         mesh.setMatrixAt(instance, matrix);
 
         color.setHSL(
-          0.285 + randomB * 0.045,
-          0.72 + randomA * 0.18,
-          0.22 + randomC * 0.13 - row * 0.008,
+          0.285 + randomB * 0.035,
+          0.62 + randomA * 0.12,
+          0.38 + randomC * 0.10 - row * 0.015,
         );
         mesh.setColorAt(instance, color);
         instance += 1;
@@ -359,7 +380,7 @@ const buildBlades = (points: THREE.Vector2[], frontZ: number): THREE.InstancedMe
   mesh.count = instance;
   mesh.instanceMatrix.needsUpdate = true;
   if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  mesh.castShadow = true;
+  mesh.castShadow = false;
   mesh.receiveShadow = true;
   mesh.frustumCulled = false;
   return mesh;
@@ -415,6 +436,13 @@ const buildExtrudedPath = (
     node.castShadow = true;
     node.receiveShadow = true;
   });
+
+  // Fine grass should receive scene light but not cast thousands of hard,
+  // high-contrast shadow triangles into the gameplay plane.
+  if (blades) {
+    blades.castShadow = false;
+    blades.receiveShadow = true;
+  }
 
   return group;
 };
