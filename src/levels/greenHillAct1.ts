@@ -1,19 +1,6 @@
 import type { LevelDefinition, StageThemeDefinition, TerrainDefinition, Vector2Definition } from '../level/LevelDefinition';
 
-const GREEN_HILL_ENVIRONMENT_URL = '../../assets/models/elements/green-hill-environment/';
-const GREEN_HILL_PALM_URL = '../../assets/models/elements/green-hill-palm-tree/green-hill-palm-tree.glb';
-const GREEN_HILL_TEXTURES_URL = '../../assets/textures/green-hill/';
-
-const environmentAssetUrl = (fileName: string) => new URL(
-  `${GREEN_HILL_ENVIRONMENT_URL}${fileName}`,
-  import.meta.url,
-).href;
-
-const textureUrl = (name: string) => new URL(
-  `${GREEN_HILL_TEXTURES_URL}${name}.png`,
-  import.meta.url,
-).href;
-
+/** Paths are relative to the engine's bundled `assets/` directory. */
 export const greenHillTheme: StageThemeDefinition = {
   id: 'green-hill',
   skyColor: 0x3aa8f7,
@@ -23,23 +10,23 @@ export const greenHillTheme: StageThemeDefinition = {
     },
   },
   textures: {
-    'dirt-checker': { url: textureUrl('dirt-checker') },
-    'dirt-band': { url: textureUrl('dirt-band') },
-    'grass-top': { url: textureUrl('grass-top') },
-    'grass-front': { url: textureUrl('grass-front') },
+    'dirt-checker': { path: 'textures/green-hill/dirt-checker.png' },
+    'dirt-band': { path: 'textures/green-hill/dirt-band.png' },
+    'grass-top': { path: 'textures/green-hill/grass-top.png' },
+    'grass-front': { path: 'textures/green-hill/grass-front.png' },
   },
   decorations: {
     'green-hill-loop': {
-      url: environmentAssetUrl('green-hill-loop.glb'),
+      path: 'models/elements/green-hill-environment/green-hill-loop.glb',
     },
     'green-hill-props': {
-      url: environmentAssetUrl('green-hill-props.glb'),
+      path: 'models/elements/green-hill-environment/green-hill-props.glb',
     },
     'green-hill-background': {
-      url: environmentAssetUrl('green-hill-background.glb'),
+      path: 'models/elements/green-hill-environment/green-hill-background.glb',
     },
     'green-hill-palm-tree': {
-      url: new URL(GREEN_HILL_PALM_URL, import.meta.url).href,
+      path: 'models/elements/green-hill-palm-tree/green-hill-palm-tree.glb',
     },
   },
 };

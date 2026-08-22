@@ -121,12 +121,18 @@ export interface StageThemeDefinition {
     color: number;
   }>;
   /** Theme texture library, loaded before terrain is built and counted in loading progress. */
-  textures?: Record<string, {
-    url: string;
-  }>;
-  decorations: Record<string, {
-    url: string;
-  }>;
+  textures?: Record<string, AssetReferenceDefinition>;
+  decorations: Record<string, AssetReferenceDefinition>;
+}
+
+/**
+ * A loadable theme asset. `path` is relative to the engine's `assets/`
+ * directory and is resolved by the LevelLoader (honoring `assetBase`);
+ * `url` bypasses resolution and is used verbatim.
+ */
+export interface AssetReferenceDefinition {
+  path?: string;
+  url?: string;
 }
 
 export interface LevelDefinition {

@@ -17,6 +17,7 @@ import {
 } from './greenHillTerrain3D';
 import type { GreenHillTerrainTextures } from './greenHillTerrain3D';
 import type {
+  AssetReferenceDefinition,
   BackgroundLayerDefinition,
   DecorationDefinition,
   GameplayEntityDefinition,
@@ -118,7 +119,7 @@ export class LevelLoader {
     const themeTextures = new Map<string, THREE.Texture>();
     if (textureEntries.length > 0) {
       const loaded = await Promise.all(textureEntries.map(([name, definition]) =>
-        track(this.loadTexture(definition.url)).then(texture => [name, texture] as const),
+        track(this.loadTexture(this.assetUrl(definition))).then(texture => [name, texture] as const),
       ));
       for (const [name, texture] of loaded) {
         themeTextures.set(name, texture);
@@ -302,7 +303,7 @@ export class LevelLoader {
       throw new Error(`Decoration asset "${definition.asset}" is not defined by theme "${level.theme.id}".`);
     }
 
-    const model = await this.loadModel(asset.url);
+    const model = await this.loadModel(this.assetUrl(asset));
     const source = definition.node
       ? model.scene.getObjectByName(definition.node)
       : model.scene;
@@ -324,10 +325,10 @@ export class LevelLoader {
   }
 
   private async loadClassicSonicModel(player: Player): Promise<void> {
-    const url = this.resolveAssetUrl(
-      'models/sonic/classic-sonic-runners/classic-sonic-runners.glb',
-      new URL('../../assets/models/sonic/classic-sonic-runners/classic-sonic-runners.glb', import.meta.url).href,
-    );
+    const url = this.assetUrl({
+      path: 'models/sonic/classic-sonic-runners/classic-sonic-runners.glb',
+      url: new URL('../../assets/models/sonic/classic-sonic-runners/classic-sonic-runners.glb', import.meta.url).href,
+    });
 
     try {
       const model = await this.loadModel(url);
@@ -368,11 +369,22 @@ export class LevelLoader {
     return this.textureCache.get(url)!;
   }
 
-  private resolveAssetUrl(pathRelativeToAssets: string, bundledUrl: string): string {
-    if (this.options.assetBase) {
-      return `${this.options.assetBase.replace(/\/+$/, '')}/${pathRelativeToAssets}`;
+  /**
+   * Resolves a theme asset reference. `path` entries are anchored at the
+   * engine's bundled `assets/` directory (or `assetBase` when set), so they
+   * keep working in any deployment layout; `url` entries are used verbatim.
+   */
+  private assetUrl(reference: AssetReferenceDefinition): string {
+    if (reference.url !== undefined && reference.path === undefined) {
+      return reference.url;
     }
-    return bundledUrl;
+    if (reference.path === undefined) {
+      throw new Error('Asset reference must define either "path" or "url".');
+    }
+    if (this.options.assetBase) {
+      return `${this.options.assetBase.replace(/\/+$/, '')}/${reference.path}`;
+    }
+    return new URL(`../../assets/${reference.path}`, import.meta.url).href;
   }
 
   private loadModel(url: string): Promise<LoadedModel> {

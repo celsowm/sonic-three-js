@@ -59,6 +59,9 @@ export async function runDemo(level: LevelDefinition, options: DemoOptions = {})
   container.appendChild(pauseOverlay);
 
   const loader = new LevelLoader({
+    // Serve the engine's assets from the deploy base (Vite's BASE_URL is "/"
+    // in dev and "/sonic-three-js/" on GitHub Pages).
+    assetBase: `${import.meta.env.BASE_URL}assets/`,
     onProgress: (loaded, total) => loading.update(loaded, total),
   });
 
