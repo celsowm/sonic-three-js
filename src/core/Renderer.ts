@@ -314,8 +314,7 @@ export class Renderer {
     }
 
     if (this.visualProfile.antialias === 'smaa') {
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, this.visualProfile.maxPixelRatio);
-      const smaa = new SMAAPass(width * pixelRatio, height * pixelRatio);
+      const smaa = new SMAAPass();
       composer.addPass(smaa);
       this.smaaPass = smaa;
     }
