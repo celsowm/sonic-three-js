@@ -288,54 +288,64 @@ export class LevelLoader {
     return mesh;
   }
 
-  private createCloudField(definition: CloudFieldBackgroundDefinition): THREE.InstancedMesh {
-    const lobesPerCloud = 4;
-    const geometry = new THREE.SphereGeometry(1, 10, 7);
-    const material = new THREE.MeshBasicMaterial({
-      color: definition.color ?? 0xf8fcff,
-      fog: false,
-    });
-    const mesh = new THREE.InstancedMesh(geometry, material, definition.count * lobesPerCloud);
+  /**
+   * Soft flat cloud silhouettes. The old implementation used lit-looking
+   * squashed spheres, which read as plastic blobs in a side-scroller. These
+   * stay cheap but behave like authored 2D/2.5D art against the sky.
+   */
+  private createCloudField(definition: CloudFieldBackgroundDefinition): THREE.Group {
+    const group = new THREE.Group();
     const seed = definition.seed ?? 1;
     const minScale = definition.minScale ?? 8;
     const maxScale = Math.max(minScale, definition.maxScale ?? 18);
-    const matrix = new THREE.Matrix4();
-    const quaternion = new THREE.Quaternion();
-    const position = new THREE.Vector3();
-    const scale = new THREE.Vector3();
+    const color = definition.color ?? 0xf8fcff;
 
-    let instanceIndex = 0;
     for (let cloudIndex = 0; cloudIndex < definition.count; cloudIndex += 1) {
       const rx = seededUnit(seed, cloudIndex * 5 + 1);
       const ry = seededUnit(seed, cloudIndex * 5 + 2);
       const rs = seededUnit(seed, cloudIndex * 5 + 3);
+      const rv = seededUnit(seed, cloudIndex * 5 + 4);
       const baseX = definition.x + (rx - 0.5) * definition.width;
       const baseY = definition.y + (ry - 0.5) * definition.height;
       const baseScale = THREE.MathUtils.lerp(minScale, maxScale, rs);
-      const lobeOffsets = [
-        [-0.55, -0.05, 0.95, 0.55],
-        [0, 0.18, 1.18, 0.72],
-        [0.58, 0.02, 0.92, 0.58],
-        [0.12, -0.18, 1.35, 0.48],
-      ] as const;
 
-      for (const [offsetX, offsetY, scaleX, scaleY] of lobeOffsets) {
-        position.set(
-          baseX + offsetX * baseScale,
-          baseY + offsetY * baseScale,
-          definition.z + seededUnit(seed, instanceIndex + 99) * 8,
-        );
-        scale.set(baseScale * scaleX, baseScale * scaleY, baseScale * 0.28);
-        matrix.compose(position, quaternion, scale);
-        mesh.setMatrixAt(instanceIndex, matrix);
-        instanceIndex += 1;
-      }
+      const shape = new THREE.Shape();
+      shape.moveTo(-1.28, -0.04);
+      shape.bezierCurveTo(-1.42, 0.23, -1.08, 0.5, -0.68, 0.45);
+      shape.bezierCurveTo(-0.55, 0.72, -0.12, 0.84, 0.2, 0.62);
+      shape.bezierCurveTo(0.45, 0.83, 0.92, 0.67, 0.98, 0.42);
+      shape.bezierCurveTo(1.32, 0.42, 1.5, 0.16, 1.28, -0.05);
+      shape.bezierCurveTo(0.98, -0.28, 0.48, -0.23, 0.16, -0.17);
+      shape.bezierCurveTo(-0.18, -0.33, -0.82, -0.29, -1.28, -0.04);
+      shape.closePath();
+
+      const geometry = new THREE.ShapeGeometry(shape, 12);
+      const material = new THREE.MeshBasicMaterial({
+        color,
+        fog: false,
+        transparent: true,
+        opacity: 0.92,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(
+        baseX,
+        baseY,
+        definition.z + (rv - 0.5) * 4,
+      );
+      mesh.scale.set(
+        baseScale * (1.15 + rv * 0.45),
+        baseScale * (0.52 + rv * 0.18),
+        1,
+      );
+      mesh.rotation.z = (rv - 0.5) * 0.045;
+      mesh.renderOrder = -200;
+      group.add(mesh);
     }
 
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.frustumCulled = false;
-    mesh.renderOrder = -200;
-    return mesh;
+    group.frustumCulled = false;
+    return group;
   }
 
   private defaultDeathY(level: LevelDefinition): number {
