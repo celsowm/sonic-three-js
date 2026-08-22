@@ -2,7 +2,9 @@ name: Deploy demo to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - feat/sonic-engine-library-10268259584624292659
   workflow_dispatch:
 
 permissions:
