@@ -313,14 +313,16 @@ export class Renderer {
       this.bloomPass = bloom;
     }
 
-    composer.addPass(new OutputPass());
-
     if (this.visualProfile.antialias === 'smaa') {
       const pixelRatio = Math.min(window.devicePixelRatio || 1, this.visualProfile.maxPixelRatio);
       const smaa = new SMAAPass(width * pixelRatio, height * pixelRatio);
       composer.addPass(smaa);
       this.smaaPass = smaa;
     }
+
+    // SMAA operates in linear-sRGB; OutputPass must remain last so tone mapping
+    // and output color-space conversion happen after anti-aliasing.
+    composer.addPass(new OutputPass());
 
     this.composer = composer;
   }
